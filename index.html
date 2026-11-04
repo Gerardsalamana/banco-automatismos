@@ -144,6 +144,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tool-wire #sv{cursor:crosshair}
 .tool-place #sv{cursor:copy}
 .tool-text #sv{cursor:text}
+.tool-select #sv{cursor:grab}
+.tool-select.panning #sv{cursor:grabbing}
+.tool-select .cp,.tool-select .whit{cursor:move}
+.tool-box #sv{cursor:crosshair}
+.tool-box .cp,.tool-box .whit{cursor:move}
 .mbox{pointer-events:none}
 .cp .dim{stroke-dasharray:2 3;stroke-width:1.4;opacity:.45}
 .txed{position:absolute;z-index:6}
@@ -523,7 +528,8 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
       <button class="btn pri" id="b-file" title="Archivo: nuevo, abrir, guardar, exportar, propiedades y ayuda"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg><span class="lbl">Archivo</span></button>
     </div>
     <div class="grp">
-      <button class="btn on" id="t-select" data-tool="select" title="Seleccionar y mover (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-3 6z"/></svg><span class="lbl">Seleccionar</span></button>
+      <button class="btn on" id="t-select" data-tool="select" title="Mover: arrastrar desplaza el plano y un clic elige un componente (V)"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span class="lbl">Mover</span></button>
+      <button class="btn" id="t-box" data-tool="box" title="Selección: arrastrar marca varios componentes con un recuadro (B)"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" stroke-dasharray="3 3"/></svg><span class="lbl">Selección</span></button>
       <button class="btn" id="t-wire" data-tool="wire" title="Dibujar cable (W)"><svg viewBox="0 0 24 24"><path d="M4 18h6V6h10"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="6" r="1.6"/></svg><span class="lbl">Cable</span></button>
       <button class="btn" id="t-text" data-tool="text" title="Escribir texto en el plano (T)"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span class="lbl">Texto</span></button>
       <button class="btn wsw" id="b-wst" title="Color y grosor del cable" aria-label="Color y grosor del cable"><i id="wst-i"></i></button>
@@ -2709,7 +2715,7 @@ function setTool(t, quiet) {
   if (t !== 'place') placing = null;
   if (t !== 'wire') wireDraft = null;
   app.classList.toggle('tool-wire', t === 'wire'); app.classList.toggle('tool-place', t === 'place'); app.classList.toggle('tool-select', t === 'select');
-  app.classList.toggle('tool-text', t === 'text');
+  app.classList.toggle('tool-text', t === 'text'); app.classList.toggle('tool-box', t === 'box');
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
   document.querySelectorAll('.it').forEach(b => b.classList.toggle('on', !!placing && b.dataset.type === placing.type));
   hint(); if (!quiet) { draw(); updateBtns(); }
@@ -2903,9 +2909,9 @@ sv.addEventListener('pointerdown', e => {
     else if (!selection.has(hid)) selection = new Set([hid]);
     beginMove(g); draw(); inspector(); updateBtns(); return;
   }
-  /* En vacío: con el ratón, recuadro de selección; con el dedo, desplazar */
-  if (e.pointerType === 'touch') { drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, clear: true}; return; }
-  drag = {mode: 'box', a: w, b: w, add: e.shiftKey};
+  /* En vacío: arrastrar mueve el plano; con la herramienta Selección o con Mayús, recuadro para marcar varios */
+  if (tool === 'box' || e.shiftKey) { drag = {mode: 'box', a: w, b: w, add: e.shiftKey}; return; }
+  drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, clear: true};
 });
 sv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [e.clientX, e.clientY]);
@@ -3035,6 +3041,7 @@ window.addEventListener('keydown', e => {
     case 'v': setTool('select'); break;
     case 'w': case 'c': setTool('wire'); break;
     case 't': setTool('text'); break;
+    case 'b': setTool('box'); break;
     case 'r': rotateSel(); break;
     case 'delete': case 'backspace': e.preventDefault(); delSel(); break;
     case 'f': fit(); break;
@@ -3371,7 +3378,8 @@ function hint() {
     : tool === 'wire' ? 'Clic en un borne para empezar · cada clic dobla el cable · arrastre en vacío o botón derecho para moverse por el plano · Esc para terminar'
     : tool === 'text' ? 'Clic en la hoja para escribir · Intro para otra línea · Esc o clic fuera para terminar'
     : tool === 'place' ? 'Clic en la hoja para colocar · R gira · Mayús+clic coloca varios · Esc cancela'
-    : 'Arrastre en vacío para seleccionar varios · Ctrl+C y Ctrl+V copian · botón derecho o Espacio para moverse por el plano · rueda para acercar';
+    : tool === 'box' ? 'Arrastre para marcar varios con un recuadro · arrastre lo marcado para moverlo · Ctrl+C y Ctrl+V copian · V vuelve a Mover'
+    : 'Arrastre en vacío para moverse por el plano · clic para elegir un componente · botón Selección o Mayús+arrastre para marcar varios · rueda para acercar';
 }
 
 /* ---------- hojas del plano ---------- */
@@ -4536,7 +4544,7 @@ function renderHome() {
         <li>Doble clic sobre el PLC (o «Editar programa») abre el programa en contactos: columnas en serie (Y) con contactos en paralelo (O) y una salida por segmento: bobina, Set, Reset, temporizadores TON y TOF y contador.</li>
         <li>Al simular, el programa se pinta en verde por donde pasa la corriente. Un pulsador NC cableado a una entrada pone esa entrada a 1 en reposo: en el programa se usa como NA.</li></ol>
       <h4>Código de colores</h4><div class="leg"><div><i style="background:var(--l1)"></i>Fases L1, L2, L3 · marrón, negro y gris</div><div><i style="background:var(--n)"></i>Neutro · azul</div><div><i style="background:repeating-linear-gradient(90deg,var(--pe) 0 8px,#E9C81C 8px 13px)"></i>Protección (tierra) · verde-amarillo, solo para ella</div><div><i style="background:#D0342C"></i>Mando · rojo (habitual en cuadros)</div></div>
-      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / W / T</kbd><span>Seleccionar / cable / texto</span><kbd>Clic derecho + arrastrar</kbd><span>Moverse por el plano (también Espacio + arrastrar)</span><kbd>Arrastrar en vacío</kbd><span>Seleccionar varios</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
+      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / B / W / T</kbd><span>Mover / selección / cable / texto</span><kbd>Arrastrar en vacío</kbd><span>Moverse por el plano (también con el botón derecho)</span><kbd>B o Mayús + arrastrar</kbd><span>Marcar varios con un recuadro</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
   }
   else h += `<h1>Abrir</h1><div class="drop" id="h-drop"><span>Arrastre aquí un archivo .json del programa, o</span><button class="btn" data-hact="import">Importar archivo…</button></div>
     <div class="hstore"><span class="sst" data-sst></span>${Store.col ? '' : WEB ? (FB ? '<button class="btn sm" data-hs="cuenta">Inicia sesión para tenerlos en cualquier ordenador</button>' : '') : '<button class="btn sm" data-hact="cloud">Guardar también en mi cuenta de Claude</button>'}</div>
