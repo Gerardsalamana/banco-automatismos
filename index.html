@@ -143,6 +143,22 @@ button,input,select,textarea{font:inherit;color:inherit}
 #sv{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:default}
 .tool-wire #sv{cursor:crosshair}
 .tool-place #sv{cursor:copy}
+.tool-text #sv{cursor:text}
+.mbox{pointer-events:none}
+.cp .dim{stroke-dasharray:2 3;stroke-width:1.4;opacity:.45}
+.txed{position:absolute;z-index:6}
+.txed textarea{display:block;width:100%;height:100%;box-sizing:border-box;border:1.5px dashed var(--sel);border-radius:4px;background:rgba(255,255,255,.92);padding:1px 4px;margin:0;resize:none;overflow:hidden;white-space:pre;outline:0;font-family:var(--f-ui)}
+.txbar{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.txed .txbar{position:absolute;left:0;bottom:calc(100% + 6px);flex-wrap:nowrap;background:var(--raise);border:1px solid var(--line);border-radius:9px;padding:3px;box-shadow:var(--shadow);width:max-content}
+.txed.low .txbar{bottom:auto;top:calc(100% + 6px)}
+.txbar button{min-width:28px;height:28px;border:0;background:none;border-radius:6px;color:var(--text);cursor:pointer;font:600 13px var(--f-ui);display:flex;align-items:center;justify-content:center;padding:0 5px}
+.txbar button:hover{background:var(--chrome)}
+.txbar button.on{background:var(--selfill);box-shadow:inset 0 0 0 1px var(--sel)}
+.txbar .sz{font:500 12px var(--f-mono);min-width:26px;text-align:center;color:var(--muted)}
+.txbar .sp{width:1px;height:18px;background:var(--line);margin:0 3px}
+.txbar i.dot{display:block;width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px rgba(150,150,150,.6)}
+.txbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.fld textarea{width:100%;min-height:70px;resize:vertical;border:1px solid var(--line);border-radius:7px;background:var(--raise);color:var(--text);padding:6px 8px;font:inherit;font-size:13px}
 .panning #sv{cursor:grabbing}
 .gdot{fill:var(--gdot)} .gmaj{fill:var(--gmaj)}
 .cp line,.cp path,.cp rect,.cp circle{stroke:var(--ink);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -509,6 +525,7 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
     <div class="grp">
       <button class="btn on" id="t-select" data-tool="select" title="Seleccionar y mover (V)"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-3 6z"/></svg><span class="lbl">Seleccionar</span></button>
       <button class="btn" id="t-wire" data-tool="wire" title="Dibujar cable (W)"><svg viewBox="0 0 24 24"><path d="M4 18h6V6h10"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="6" r="1.6"/></svg><span class="lbl">Cable</span></button>
+      <button class="btn" id="t-text" data-tool="text" title="Escribir texto en el plano (T)"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span class="lbl">Texto</span></button>
       <button class="btn wsw" id="b-wst" title="Color y grosor del cable" aria-label="Color y grosor del cable"><i id="wst-i"></i></button>
     </div>
     <div class="grp">
@@ -650,7 +667,9 @@ function actuator(kind, m, pushed) {
   const d = pushed ? 5 : 0, link = x => ln(x, 0, m[0], m[1], 'dash');
   switch (kind) {
     case 'push': return ln(-18 + d, 0, m[0], m[1], 'dash') + pa(`M${-12 + d} -7H${-18 + d}V7H${-12 + d}`);
-    case 'toggle': return link(-18) + pa('M-18 -7V7M-18 -7H-13M-18 7L-22 3');
+    case 'toggle': return link(-20) + pa('M-20 8V-8H-14');
+    case 'smoke': return link(-18) + rc(-33, -8, 15, 16) + pa('M-29 5Q-32 2 -29 -1Q-27 -4 -29 -6M-23 5Q-26 2 -23 -1Q-21 -4 -23 -6');
+    case 'drop': return link(-18) + rc(-33, -8, 15, 16) + pa('M-25.5 -6Q-20.5 0 -20.5 2.5A5 5 0 0 1 -30.5 2.5Q-30.5 0 -25.5 -6Z');
     case 'limit': return link(-18) + ci(-23, 0, 5);
     case 'emerg': return link(-18) + pa('M-18 -9V9') + pa('M-18 -10A10 10 0 0 0 -18 10', 'mush');
     case 'prox': return link(-17) + pa(DIAMOND) + ln(-27, 3, -21, -3);
@@ -786,7 +805,7 @@ reg({k: 'tr1', name: 'Transformador de mando', short: 'Transformador', cat: 'Ali
       ln(-20, -40, -20, -32) + ln(-20, -32, -10, -18) + ln(20, -40, 20, -32) + ln(20, -32, 10, -18) +
       ln(-20, 40, -20, 32) + ln(-20, 32, -10, 18) + ln(20, 40, 20, 32) + ln(20, 32, 10, 18);
   },
-  labels(c) { return [{x: 30, y: -2, t: c.tag, cls: 'tg'}, {x: 30, y: 12, t: '230/' + (c.p.Us || 24) + ' V', cls: 'tn'}, {x: -26, y: -31, t: '1', cls: 'tn'}, {x: 26, y: -31, t: '2', cls: 'tn'}, {x: -26, y: 31, t: '3', cls: 'tn'}, {x: 26, y: 31, t: '4', cls: 'tn'}]; }
+  labels(c) { return [{x: 30, y: -2, t: c.tag, cls: 'tg'}, {x: 30, y: 12, t: '230/' + (c.p.Us || 24) + ' V', cls: 'tn'}, {x: -26, y: -31, t: '1', cls: 'tn', a: 'end'}, {x: 26, y: -31, t: '2', cls: 'tn'}, {x: -26, y: 31, t: '3', cls: 'tn', a: 'end'}, {x: 26, y: 31, t: '4', cls: 'tn'}]; }
 });
 
 /* Protección */
@@ -799,7 +818,7 @@ reg({k: 'fuse', name: 'Fusible', short: 'Fusible', cat: 'Protección', kind: 'sw
 P3({k: 'fuse3', name: 'Fusibles tripolares', short: 'Fusibles 3P', cat: 'Protección', drive: 'self', prot: true, fuse: true, prefix: 'F', box: [-50, -42, 46, 42], tagx: -54, defaults: {In: 25},
   desc: 'Tres fusibles de potencia en un mismo portafusibles. Si uno corta, se sustituyen los tres.',
   draw(c, st) { let s = ''; [-40, 0, 40].forEach(x => { s += `<g transform="translate(${x} 0)">${st.blown ? ln(0, -40, 0, -7) + ln(0, 7, 0, 40) + ln(-6, -6, 6, 6, 'warn') + ln(6, -6, -6, 6, 'warn') : ln(0, -40, 0, 40)}${rc(-6, -17, 12, 34)}</g>`; }); return s; },
-  more(c, st) { return [{x: -54, y: 14, t: fmtS(c.p.In) + ' A', cls: 'tn'}].concat(st.blown ? [{x: -54, y: 28, t: 'fundidos', cls: 'st err'}] : []); }
+  more(c, st) { return [{x: -54, y: 14, t: fmtS(c.p.In) + ' A', cls: 'tn', a: 'end'}].concat(st.blown ? [{x: -54, y: 28, t: 'fundidos', cls: 'st err'}] : []); }
 });
 reg({k: 'q1', name: 'Magnetotérmico unipolar', short: 'Magneto 1P', cat: 'Protección', kind: 'sw', drive: 'self', prot: true, prefix: 'Q',
   pins: [[0, -2], [0, 2]], box: [-40, -42, 16, 42], defaults: {In: 10},
@@ -961,11 +980,24 @@ reg({k: 'fault', name: 'Defecto a tierra', short: 'Defecto a tierra', cat: 'Cone
   draw(c, st) { const k = st.act ? 'act' : ''; return ln(0, -40, 0, -16) + ln(0, 16, 0, 40) + rc(-6, -16, 12, 32, k) + pa('M17 -12L9 0H17L9 12', st.act ? 'warn' : ''); },
   labels(c, st) { return [{x: 22, y: -16, t: c.tag, cls: 'tg', a: 'start'}].concat(st.act ? [{x: 22, y: 20, t: 'fuga', cls: 'st err', a: 'start'}] : []); }
 });
-reg({k: 'text', name: 'Texto', short: 'Texto', cat: 'Conexiones', kind: 'text', pins: [], box: [-4, -12, 80, 12], defaults: {text: 'Texto'},
-  desc: 'Una nota en el plano: títulos, aclaraciones o instrucciones.',
-  boxOf(c) { return [-4, -12, Math.max(30, String(c.p.text || '').length * 7.6) + 6, 12]; },
+const TXC = {ink: '#1A2724', rojo: '#C9342A', azul: '#2462C8', verde: '#177A41', ambar: '#B3610B', violeta: '#6B3FA0'};
+const TXS = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64];
+const txFont = p => `${p.ital ? 'italic ' : ''}${p.bold ? 700 : 500} ${+p.size || 14}px 'IBM Plex Sans', Arial, sans-serif`;
+reg({k: 'text', name: 'Texto', short: 'Texto', cat: 'Conexiones', kind: 'text', pins: [], box: [-4, -12, 80, 12], defaults: {text: 'Texto', size: 14, bold: false, ital: false, color: 'ink', align: 'start'},
+  desc: 'Una nota en el plano: títulos, aclaraciones o instrucciones. Doble clic para escribir en ella.',
+  boxOf(c) {
+    const p = c.p, sz = +p.size || 14, L = String(p.text || '').split('\n'), lh = sz * 1.3;
+    meas.font = txFont(p);
+    const w = Math.max(30, ...L.map(s => meas.measureText(s).width)), x0 = p.align === 'middle' ? -w / 2 : p.align === 'end' ? -w : 0;
+    return [x0 - 4, -sz * 0.75, x0 + w + 4, (L.length - 1) * lh + sz * 0.75];
+  },
   draw() { return ''; },
-  labels(c) { return [{x: 0, y: 0, t: c.p.text, cls: 'note', a: 'start'}]; }
+  labels(c) {
+    if (c._editing) return [];
+    const p = c.p, sz = +p.size || 14;
+    const st = `font-size:${sz}px;font-weight:${p.bold ? 700 : 500};font-style:${p.ital ? 'italic' : 'normal'};fill:${TXC[p.color] || TXC.ink}`;
+    return String(p.text || '').split('\n').map((t, i) => ({x: 0, y: i * sz * 1.3, t, cls: 'note', a: p.align || 'start', st}));
+  }
 });
 
 /* ---- Puntos de alimentación sueltos (como los bornes L1, L2, L3, N, PE, +24 V y 0 V de CADe_SIMU) ---- */
@@ -1048,13 +1080,15 @@ reg({k: 'lsd', name: 'Final de carrera doble (NA + NC)', short: 'Final carrera d
   labels(c) { return [{x: 36, y: -2, t: c.tag, cls: 'tg'}, {x: -14, y: -31, t: '13', cls: 'tn'}, {x: -14, y: 31, t: '14', cls: 'tn'}, {x: 26, y: -31, t: '21', cls: 'tn'}, {x: 26, y: 31, t: '22', cls: 'tn'}]; }
 });
 reg({k: 'conm', name: 'Conmutador (contacto conmutado)', short: 'Conmutador', cat: 'Mando', kind: 'sw3', prefix: 'S', drive: 'toggle', poleRest: [true, false],
-  pins: [[-1, -2], [1, -2], [0, 2]], poles: [[2, 0], [2, 1]], box: [-36, -42, 36, 42],
+  pins: [[-1, -2], [1, -2], [0, 2]], poles: [[2, 0], [2, 1]], box: [-46, -42, 44, 42],
   desc: 'Un común (11) que pasa de un borne (12) al otro (14) con cada clic. Con dos conmutadores se hace el encendido de una luz desde dos sitios (conmutada).',
   draw(c, st) {
-    const on = st.cl ? st.cl[1] : false;
-    return ln(-20, -40, -20, -12) + ln(20, -40, 20, -12) + ln(0, 40, 0, 12) + (on ? ln(0, 12, 19, -13) : ln(0, 12, -19, -13)) + actuator('toggle', [on ? 9 : -9, -0.5]);
+    const on = st.cl ? st.cl[1] : false, tx = on ? 20 : -20, my = 0.5;
+    return ln(-20, -40, -20, -13) + ln(20, -40, 20, -13) + ln(0, 40, 0, 13) +
+      ci(-20, -11, 2.4, 'fill') + ci(20, -11, 2.4, 'fill') + ci(0, 11, 2.4, 'fill') +
+      ln(0, 11, tx, -11) + ln(-34, my, tx / 2, my, 'dash') + pa('M-34 8V-8H-28');
   },
-  labels(c) { return [{x: 30, y: 8, t: c.tag, cls: 'tg', a: 'start'}, {x: -14, y: -31, t: '12', cls: 'tn'}, {x: 26, y: -31, t: '14', cls: 'tn'}, {x: 6, y: 31, t: '11', cls: 'tn'}]; }
+  labels(c) { return [{x: 30, y: 6, t: c.tag, cls: 'tg', a: 'start'}, {x: -26, y: -31, t: '12', cls: 'tn', a: 'end'}, {x: 26, y: -31, t: '14', cls: 'tn', a: 'start'}, {x: 6, y: 31, t: '11', cls: 'tn', a: 'start'}]; }
 });
 reg({k: 'sel3', name: 'Selector de 3 posiciones (I - 0 - II)', short: 'Selector I-0-II', cat: 'Mando', kind: 'sw3', prefix: 'S', drive: 'sel3',
   pins: [[-1, -2], [1, -2], [-1, 2], [1, 2]], poles: [[0, 2], [1, 3]], box: [-60, -42, 44, 42],
@@ -1125,16 +1159,17 @@ PN({k: 'int2', name: 'Interruptor bipolar', short: 'Interruptor bipolar', cat: '
   draw(c, st) { const p = polesN([-20, 20], st, ''); return p.s + ln(p.m0[0], p.m0[1], p.m2[0], p.m2[1], 'dash') + `<g transform="translate(-20 0)">${actuator('toggle', bmid(true, st.closed))}</g>`; }
 });
 reg({k: 'cruce', name: 'Conmutador de cruce (cruzamiento)', short: 'Conmutador de cruce', cat: 'Vivienda', kind: 'sw3', prefix: 'S', drive: 'toggle',
-  pins: [[-1, -2], [1, -2], [-1, 2], [1, 2]], poles: [[0, 2], [1, 3], [0, 3], [1, 2]], poleRest: [true, true, false, false], box: [-54, -42, 40, 42],
+  pins: [[-1, -2], [1, -2], [-1, 2], [1, 2]], poles: [[0, 2], [1, 3], [0, 3], [1, 2]], poleRest: [true, true, false, false], box: [-50, -42, 40, 42],
   desc: 'Va entre dos conmutadores para encender una luz desde tres sitios o más. En una posición une los bornes en paralelo y en la otra los cruza. Un clic cambia de posición.',
   draw(c, st) {
     const x = st.cl ? !st.cl[0] : false;
-    let s = ln(-20, -40, -20, -13) + ln(20, -40, 20, -13) + ln(-20, 40, -20, 13) + ln(20, 40, 20, 13);
-    s += [[-20, -13], [20, -13], [-20, 13], [20, 13]].map(([a, b]) => ci(a, b, 2.4, 'fill')).join('');
-    s += x ? ln(-20, 11, 20, -11) + ln(20, 11, -20, -11) : ln(-20, 11, -20, -11) + ln(20, 11, 20, -11);
-    return s + `<g transform="translate(-24 0)">${actuator('toggle', [4, 0])}</g>`;
+    const par = k => ln(-20, -11, -20, 11, k) + ln(20, -11, 20, 11, k), cru = k => ln(-20, -11, 20, 11, k) + ln(20, -11, -20, 11, k);
+    let s = ln(-20, -40, -20, -13) + ln(20, -40, 20, -13) + ln(-20, 40, -20, 13) + ln(20, 40, 20, 13) + rc(-30, -22, 60, 44, 'dash', 4);
+    s += x ? par('dim') + cru('') : cru('dim') + par('');
+    s += [[-20, -11], [20, -11], [-20, 11], [20, 11]].map(([a, b]) => ci(a, b, 2.4, 'fill')).join('');
+    return s + ln(-30, 0, -40, 0, 'dash') + pa('M-40 8V-8H-34');
   },
-  labels(c, st) { return [{x: 30, y: -2, t: c.tag, cls: 'tg', a: 'start'}, {x: 30, y: 12, t: st.cl && !st.cl[0] ? 'cruzado' : '', cls: 'tn', a: 'start'}]; }
+  labels(c, st) { return [{x: 34, y: -2, t: c.tag, cls: 'tg', a: 'start'}, {x: 34, y: 12, t: st.cl && !st.cl[0] ? 'cruzado' : '', cls: 'tn', a: 'start'}]; }
 });
 reg({k: 'dim', name: 'Regulador de luz', short: 'Regulador', cat: 'Vivienda', kind: 'sw', prefix: 'S', drive: 'dim',
   pins: [[0, -2], [0, 2]], box: [-36, -42, 40, 42],
@@ -1145,33 +1180,27 @@ reg({k: 'dim', name: 'Regulador de luz', short: 'Regulador', cat: 'Vivienda', ki
   extraEls(c, p, els) { [3000, 1000, 333].forEach((r, i) => els.push({a: p[0], b: p[1], g: 1 / r, on: () => !!(sim.dim && sim.dim[c.id] === i + 1)})); }
 });
 reg({k: 'plug', name: 'Base de enchufe (toma de corriente)', short: 'Enchufe', cat: 'Vivienda', kind: 'outlet', prefix: 'X', drive: 'plug', defaults: {W: 1000},
-  pins: [[-2, -2], [0, -2], [2, -2]], box: [-52, -42, 52, 36],
+  pins: [[-2, -2], [0, -2], [2, -2]], box: [-52, -42, 52, 30],
   desc: 'Toma de 230 V con tierra. En simulación, un clic enchufa o desenchufa un aparato de la potencia elegida en sus propiedades.',
   draw(c, st) {
-    let s = ln(-40, -40, -40, -14) + ln(40, -40, 40, -14) + ln(0, -40, 0, -24) + ln(-40, -14, -14, -14) + ln(40, -14, 14, -14) + ln(-10, -24, 10, -24);
-    s += pa('M-24 -6A24 24 0 0 0 24 -6') + ln(-14, -14, -14, -6) + ln(14, -14, 14, -6);
-    if (st.act) s += rc(-16, 8, 32, 18, 'on', 3) + ln(-8, 8, -8, 2) + ln(8, 8, 8, 2);
-    return s;
+    return pa('M-40 -40V-22H-12V-4') + pa('M40 -40V-22H12V-4') + ln(0, -40, 0, -12) + ln(-8, -12, 8, -12) + pa('M-24 -4A24 24 0 0 0 24 -4Z', st.act ? 'on' : '');
   },
-  labels(c, st) { return [{x: -40, y: -20, t: 'L', cls: 'tn', a: 'middle'}, {x: 40, y: -20, t: 'N', cls: 'tn', a: 'middle'}, {x: 8, y: -31, t: 'PE', cls: 'tn', a: 'start'}, {x: 30, y: 6, t: c.tag, cls: 'tg', a: 'start'}, {x: 30, y: 20, t: st.act ? (+c.p.W || 1000) + ' W' : '', cls: 'st ok', a: 'start'}]; },
+  labels(c, st) { return [{x: -46, y: -30, t: 'L', cls: 'tn', a: 'end'}, {x: 46, y: -30, t: 'N', cls: 'tn', a: 'start'}, {x: 6, y: -31, t: 'PE', cls: 'tn', a: 'start'}, {x: 30, y: 8, t: c.tag, cls: 'tg', a: 'start'}, {x: 30, y: 22, t: st.act ? (+c.p.W || 1000) + ' W' : '', cls: 'st ok', a: 'start'}]; },
   extraEls(c, p, els) { els.push({a: p[0], b: p[2], g: (+c.p.W || 1000) / 52900, on: () => !!(sim.cs[c.id] && sim.cs[c.id].act)}); }
 });
 reg({k: 'plug3', name: 'Base de enchufe trifásica', short: 'Enchufe 3F', cat: 'Vivienda', kind: 'outlet', prefix: 'X', drive: 'plug', defaults: {W: 3500},
-  pins: [[-4, -2], [-2, -2], [0, -2], [2, -2], [4, -2]], box: [-92, -42, 92, 36],
+  pins: [[-4, -2], [-2, -2], [0, -2], [2, -2], [4, -2]], box: [-92, -42, 92, 46],
   desc: 'Toma industrial de 400 V con L1, L2, L3, N y PE. En simulación, un clic enchufa o desenchufa una máquina trifásica de la potencia elegida.',
   draw(c, st) {
-    let s = [-80, -40, 0, 40, 80].map(x => ln(x, -40, x, -14)).join('') + ln(-80, -14, 80, -14) ;
-    s += pa('M-40 -6A40 40 0 0 0 40 -6') + ln(-40, -14, -40, -6) + ln(40, -14, 40, -6);
-    if (st.act) s += rc(-20, 14, 40, 18, 'on', 3);
-    return s;
+    return pa('M-80 -40V-12H-32V-4') + pa('M-40 -40V-22H-16V-4') + ln(0, -40, 0, -4) + pa('M40 -40V-22H16V-4') + pa('M80 -40V-12H32V-4') + pa('M-44 -4A44 44 0 0 0 44 -4Z', st.act ? 'on' : '');
   },
-  labels(c, st) { return ['L1', 'L2', 'L3', 'N', 'PE'].map((t, i) => ({x: -80 + 40 * i + 5, y: -28, t, cls: 'tn', a: 'start'})).concat([{x: 48, y: 6, t: c.tag, cls: 'tg', a: 'start'}, {x: 48, y: 20, t: st.act ? (+c.p.W || 3500) + ' W' : '', cls: 'st ok', a: 'start'}]); },
+  labels(c, st) { return ['L1', 'L2', 'L3', 'N', 'PE'].map((t, i) => ({x: -80 + 40 * i + 5, y: -32, t, cls: 'tn', a: 'start'})).concat([{x: 50, y: 12, t: c.tag, cls: 'tg', a: 'start'}, {x: 50, y: 26, t: st.act ? (+c.p.W || 3500) + ' W' : '', cls: 'st ok', a: 'start'}]); },
   extraEls(c, p, els) { for (let i = 0; i < 3; i++) els.push({a: p[i], b: p[3], g: (+c.p.W || 3500) / 3 / 52900, on: () => !!(sim.cs[c.id] && sim.cs[c.id].act)}); }
 });
 reg({k: 'minut', name: 'Minutero (automático de escalera)', short: 'Minutero', cat: 'Vivienda', kind: 'minut', prefix: 'KT', drive: 'timer', timer: 'off', driver: 'timer', hasUn: true, defaults: {delay: 10, Un: 230},
   pins: [[-1, -2], [-1, 2], [1, -2], [1, 2]], box: [-50, -42, 56, 42],
   desc: 'Bobina y contacto en un mismo aparato: un impulso de cualquier pulsador enciende la luz y el contacto se mantiene cerrado el tiempo fijado después de soltar.',
-  draw(c, st) { return `<g transform="translate(-20 0)">${coilDraw(st, 'off')}</g><g transform="translate(20 0)">${blade(true, st.closed)}</g>` + rc(-44, -30, 88, 60, 'dash', 4); },
+  draw(c, st) { return `<g transform="translate(-20 0)">${coilDraw(st, 'off')}</g><g transform="translate(20 0)">${blade(true, st.closed)}</g>` + rc(-44, -24, 88, 48, 'dash', 4); },
   labels(c, st) { return [{x: 48, y: -2, t: c.tag, cls: 'tg', a: 'start'}, {x: 48, y: 12, t: fmtS(c.p.delay) + ' s', cls: 'tn', a: 'start'}, {x: -14, y: -34, t: 'A1', cls: 'tn'}, {x: -14, y: 34, t: 'A2', cls: 'tn'}, {x: 26, y: -34, t: '15', cls: 'tn'}, {x: 26, y: 34, t: '18', cls: 'tn'}]; }
 });
 reg({k: 'kwh', name: 'Contador de energía', short: 'Contador kWh', cat: 'Vivienda', kind: 'kwh', role: 'kwh', prefix: 'PE',
@@ -1198,8 +1227,8 @@ reg({k: 'buzz', name: 'Zumbador', short: 'Zumbador', cat: 'Vivienda', kind: 'loa
   draw(c, st) { let s = ln(0, -40, 0, -12) + ln(0, 12, 0, 40) + pa('M-14 -12H14V0A14 14 0 0 1 -14 0Z', st.on ? 'on' : ''); if (st.on) s += pa('M20 -8A12 12 0 0 1 20 8', 'wave'); return s; },
   labels(c) { return [{x: 20, y: 22, t: c.tag, cls: 'tg', a: 'start'}].concat(unLabel(c) ? [{x: 20, y: 34, t: unLabel(c), cls: 'tn', a: 'start'}] : []); }
 });
-C2({k: 'smoke', name: 'Detector de humo', short: 'Detector humo', cat: 'Vivienda', prefix: 'B', drive: 'toggle', inv: true, act: 'box', glyph: 'Hm', nums: ['13', '14'], desc: 'Cierra su contacto al detectar humo. ' + SENS});
-C2({k: 'flood', name: 'Detector de inundación', short: 'Detector agua', cat: 'Vivienda', prefix: 'B', drive: 'toggle', inv: true, act: 'box', glyph: 'Ag', nums: ['13', '14'], desc: 'Sonda de suelo que cierra al mojarse. Se usa para cortar la electroválvula del agua. ' + SENS});
+C2({k: 'smoke', name: 'Detector de humo', short: 'Detector humo', cat: 'Vivienda', prefix: 'B', drive: 'toggle', inv: true, act: 'smoke', nums: ['13', '14'], desc: 'Cierra su contacto al detectar humo. ' + SENS});
+C2({k: 'flood', name: 'Detector de inundación', short: 'Detector agua', cat: 'Vivienda', prefix: 'B', drive: 'toggle', inv: true, act: 'drop', nums: ['13', '14'], desc: 'Sonda de suelo que cierra al mojarse. Se usa para cortar la electroválvula del agua. ' + SENS});
 
 /* ---- Electrónica ----
    Los semiconductores se resuelven por tramos: cada diodo conduce o bloquea según su tensión en continua,
@@ -1245,14 +1274,14 @@ reg({k: 'capa', name: 'Condensador electrolítico', short: 'Condensador', cat: '
   labels(c) { return [{x: -12, y: -14, t: '+', cls: 'pl', a: 'middle'}, {x: 18, y: -6, t: c.tag, cls: 'tg', a: 'start'}, {x: 18, y: 8, t: (+c.p.uf || 470) + ' µF', cls: 'tn', a: 'start'}]; }
 });
 reg({k: 'npn', name: 'Transistor NPN (en conmutación)', short: 'Transistor NPN', cat: 'Electrónica', kind: 'semi', prefix: 'Q', gOn: 1 / 100, imax: 0.05, icmax: 0.5,
-  pins: [[1, -2], [-1, 0], [1, 2]], box: [-24, -42, 70, 42],
+  pins: [[1, -2], [-1, 0], [1, 2]], box: [-32, -42, 70, 42],
   desc: 'Interruptor electrónico: una corriente pequeña de base (B) a emisor (E) deja pasar una grande de colector (C) a emisor. La base va siempre con resistencia (unos 10 kΩ a 24 V). Aguanta hasta 0,5 A: para más, que mande un relé.',
   draw(c, st) {
     const k = st.burnt ? 'burnt' : '';
     return ln(-20, 0, -6, 0) + ln(-6, -14, -6, 14, k) + ln(-6, -6, 12, -18) + ln(12, -18, 20, -18) + ln(20, -18, 20, -40) + ln(-6, 6, 12, 18) + ln(12, 18, 20, 18) + ln(20, 18, 20, 40) +
       pa('M12 18L4 17L8 11Z', 'ah') + ci(4, 0, 22, st.ce && !st.burnt ? 'mrun' : '');
   },
-  labels(c, st) { return [{x: 28, y: -4, t: c.tag, cls: 'tg', a: 'start'}, {x: 28, y: 10, t: st.burnt ? 'quemado' : st.live ? (st.ce ? 'conduce' : 'corte') : '', cls: st.burnt ? 'st err' : st.ce ? 'st ok' : 'tn', a: 'start'}, {x: 26, y: -32, t: 'C', cls: 'tn', a: 'start'}, {x: -16, y: -8, t: 'B', cls: 'tn', a: 'middle'}, {x: 26, y: 32, t: 'E', cls: 'tn', a: 'start'}]; }
+  labels(c, st) { return [{x: 28, y: -4, t: c.tag, cls: 'tg', a: 'start'}, {x: 28, y: 10, t: st.burnt ? 'quemado' : st.live ? (st.ce ? 'conduce' : 'corte') : '', cls: st.burnt ? 'st err' : st.ce ? 'st ok' : 'tn', a: 'start'}, {x: 26, y: -32, t: 'C', cls: 'tn', a: 'start'}, {x: -26, y: -10, t: 'B', cls: 'tn', a: 'middle'}, {x: 26, y: 32, t: 'E', cls: 'tn', a: 'start'}]; }
 });
 reg({k: 'ssr', name: 'Relé de estado sólido (SSR)', short: 'Relé estático', cat: 'Electrónica', kind: 'sw3', drive: 'ssr', prefix: 'K',
   pins: [[-1, -2], [-1, 2], [1, -2], [1, 2]], poles: [[2, 3]], box: [-36, -42, 70, 42],
@@ -1318,8 +1347,8 @@ reg({k: 'rres', name: 'Resistencias rotóricas de arranque', short: 'Resist. rot
 reg({k: 'motbr', name: 'Motor trifásico con freno electromagnético', short: 'Motor con freno', cat: 'Motores y variadores', kind: 'mot', prefix: 'M',
   pins: [[-2, -2], [0, -2], [2, -2], [3, 1], [3, 3]], box: [-46, -42, 76, 62],
   desc: 'Motor con freno de seguridad: el freno está apretado mientras su bobina (B1-B2, 230 V) no tiene tensión. Si se da tensión al motor sin soltar el freno, se queda bloqueado.',
-  draw(c, st) { return motTop() + motBody(st, 14, 26) + ln(60, 20, 46, 20) + ln(60, 60, 60, 36) + rc(36, 20, 20, 16, st.brake ? 'on' : '') + ln(26, 28, 36, 28, 'dash'); },
-  labels(c, st) { return [{x: 0, y: 10, t: 'M', cls: 'mt', a: 'middle'}, {x: 0, y: 27, t: '3~', cls: 'ms', a: 'middle'}, {x: -34, y: -33, t: 'U', cls: 'tn', a: 'start'}, {x: 6, y: -33, t: 'V', cls: 'tn', a: 'start'}, {x: 46, y: -33, t: 'W', cls: 'tn', a: 'start'}, {x: 66, y: 14, t: 'B1', cls: 'tn', a: 'start'}, {x: 66, y: 56, t: 'B2', cls: 'tn', a: 'start'}].concat(stLabels(c, st, -34, 52).map(l => Object.assign(l, {a: 'end', x: -34}))); }
+  draw(c, st) { return motTop() + motBody(st, 14, 26) + ln(60, 20, 60, 25) + rc(48, 25, 24, 14, st.brake ? 'on' : '') + ln(60, 39, 60, 60) + ln(22, 32, 48, 32, 'dash'); },
+  labels(c, st) { return [{x: 0, y: 10, t: 'M', cls: 'mt', a: 'middle'}, {x: 0, y: 27, t: '3~', cls: 'ms', a: 'middle'}, {x: -34, y: -33, t: 'U', cls: 'tn', a: 'start'}, {x: 6, y: -33, t: 'V', cls: 'tn', a: 'start'}, {x: 46, y: -33, t: 'W', cls: 'tn', a: 'start'}, {x: 66, y: 19, t: 'B1', cls: 'tn', a: 'start'}, {x: 66, y: 53, t: 'B2', cls: 'tn', a: 'start'}, {x: 34, y: 2, t: c.tag, cls: 'tg', a: 'start'}, {x: 0, y: 53, t: st.state || '', cls: 'st ' + (st.k || ''), a: 'middle'}]; }
 });
 reg({k: 'tr3', name: 'Transformador trifásico', short: 'Transformador 3~', cat: 'Motores y variadores', kind: 'tr3', prefix: 'T', defaults: {Us: 400},
   pins: [[-2, -2], [0, -2], [2, -2], [-3, 2], [-1, 2], [1, 2], [3, 2]], box: [-72, -42, 90, 42],
@@ -1361,7 +1390,7 @@ function vAct(kind, x0, s) {
 function VALVE(o) {
   const nSq = o.sq.length, rest = o.sq.indexOf(0), L = -40 - rest * 80, R = 40 + (nSq - 1 - rest) * 80;
   return reg(Object.assign({
-    kind: 'valve', air: true, prefix: 'V', drive: 'pman', cat: 'Neumática',
+    kind: 'valve', air: true, prefix: 'V', drive: 'pman', cat: 'Neumática', ibox: [L - 28, -44, R + 28, 44],
     draw(c, st) {
       const pos = st.vpos || 0, dx = (rest - o.sq.indexOf(pos)) * 80, P = o.ports, hot = st.hot || {};
       let s = '';
@@ -1570,7 +1599,7 @@ const KW = {
   tno: 'contacto temporizado temporizador', tnc: 'contacto temporizado temporizador',
   lamp: 'luz lampara piloto bombilla led indicador senalizacion', bell: 'timbre sirena alarma zumbador avisador campana sonido',
   mot3: 'motor trifasico bomba ventilador maquina', mot6: 'motor estrella triangulo trifasico bomba', mot1: 'motor monofasico bomba ventilador',
-  yv: 'electrovalvula bobina solenoide yv neumatica', cyl: 'simplificado electrovalvula cilindro piston vastago', borne: 'borne regleta conexion empalme', fault: 'fuga tierra defecto derivacion', text: 'texto nota etiqueta titulo'
+  yv: 'electrovalvula bobina solenoide yv neumatica', cyl: 'simplificado electrovalvula cilindro piston vastago', borne: 'borne regleta conexion empalme', fault: 'fuga tierra defecto derivacion', text: 'texto nota etiqueta titulo escribir letra'
 };
 /* Puntuación de un componente para lo que se ha escrito: el nombre manda sobre los sinónimos */
 function compScore(k, words) {
@@ -2545,8 +2574,8 @@ function compSVG(c, extra) {
   for (const L of t.labels(c, st)) {
     if (L.t == null || L.t === '') continue;
     const q = rot(L.x, L.y, c.type === 'text' ? 0 : r);
-    const a = L.a && !r ? L.a : (L.a === 'middle' ? 'middle' : (q[0] > 3 ? 'start' : q[0] < -3 ? 'end' : 'middle'));
-    s += `<text class="${L.cls}" x="${(X + q[0]).toFixed(1)}" y="${(Y + q[1]).toFixed(1)}" text-anchor="${a}" dominant-baseline="central">${hx(L.t)}</text>`;
+    const a = L.a && !r ? L.a : L.a === 'middle' ? 'middle' : !r && L.cls === 'tn' ? 'start' : q[0] > 3 ? 'start' : q[0] < -3 ? 'end' : 'middle';
+    s += `<text class="${L.cls}" x="${(X + q[0]).toFixed(1)}" y="${(Y + q[1]).toFixed(1)}" text-anchor="${a}" dominant-baseline="central"${L.st ? ` style="${L.st}"` : ''}>${hx(L.t)}</text>`;
   }
   return s + '</g>';
 }
@@ -2633,6 +2662,7 @@ function applyView() {
   world.setAttribute('transform', `translate(${view.x.toFixed(2)} ${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
   $('#gp').setAttribute('patternTransform', `translate(${view.x.toFixed(2)} ${view.y.toFixed(2)}) scale(${view.k.toFixed(4)})`);
   $('#z-val').textContent = Math.round(view.k * 100) + '%';
+  if (txEd) txPos();
 }
 function zoomAt(px, py, f) {
   const nk = clamp(view.k * f, 0.25, 3);
@@ -2679,6 +2709,7 @@ function setTool(t, quiet) {
   if (t !== 'place') placing = null;
   if (t !== 'wire') wireDraft = null;
   app.classList.toggle('tool-wire', t === 'wire'); app.classList.toggle('tool-place', t === 'place'); app.classList.toggle('tool-select', t === 'select');
+  app.classList.toggle('tool-text', t === 'text');
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
   document.querySelectorAll('.it').forEach(b => b.classList.toggle('on', !!placing && b.dataset.type === placing.type));
   hint(); if (!quiet) { draw(); updateBtns(); }
@@ -2689,6 +2720,7 @@ function startPlace(type) {
   setTool('place'); inspector();
 }
 function placeAt(g, keep) {
+  if (placing && placing.type === 'text') { setTool('select', true); txNew(g); return; }
   snap();
   const t = T[placing.type];
   const c = {id: nid('c'), type: placing.type, x: g[0], y: g[1], r: placing.r, tag: defaultTag(placing.type), p: Object.assign({}, t.defaults)};
@@ -2781,22 +2813,44 @@ function rotateSel() {
 }
 let clip = null;
 function copySel() {
-  const comps = doc.comps.filter(c => selection.has(c.id)).map(c => JSON.parse(JSON.stringify({type: c.type, x: c.x, y: c.y, r: c.r, tag: c.tag, p: c.p})));
-  const wires = doc.wires.filter(w => selection.has(w.id)).map(w => ({pts: w.pts.map(p => p.slice()), c: w.c, t: w.t}));
+  const ids = new Set(selection);
+  for (const w of wiresBetween(ids)) ids.add(w.id);
+  const comps = doc.comps.filter(c => ids.has(c.id)).map(c => JSON.parse(JSON.stringify({type: c.type, x: c.x, y: c.y, r: c.r, tag: c.tag, p: c.p})));
+  const wires = doc.wires.filter(w => ids.has(w.id)).map(w => ({pts: w.pts.map(p => p.slice()), c: w.c, t: w.t}));
   if (!comps.length && !wires.length) return false;
-  clip = {comps, wires, n: 0}; return true;
+  clip = {comps, wires, n: 0, at: null, stack: 0}; return true;
 }
-function paste() {
+/* Pega lo copiado: en el ratón con Ctrl+V; si no, al lado. Un sistema se copia entero: las marcas se renumeran
+   a la vez, de modo que los contactos pegados siguen a la bobina pegada y no a la original. */
+function paste(atCursor) {
   if (sim.on || !clip) return;
-  clip.n++; const d = 2 * clip.n; snap();
-  const ns = new Set();
-  for (const c of clip.comps) {
-    const n = {id: nid('c'), type: c.type, x: c.x + d, y: c.y + d, r: c.r, tag: c.tag, p: JSON.parse(JSON.stringify(c.p))};
-    const t = T[n.type]; if (t.prefix && !t.follows && n.type !== 'borne') n.tag = nextTag(t.prefix);
-    doc.comps.push(n); ns.add(n.id);
+  snap();
+  const xs = clip.comps.map(c => c.x).concat(clip.wires.flatMap(w => w.pts.map(p => p[0]))), ys = clip.comps.map(c => c.y).concat(clip.wires.flatMap(w => w.pts.map(p => p[1])));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), many = clip.comps.length + clip.wires.length > 1;
+  let dx, dy;
+  if (atCursor && lastMouse) {
+    const same = clip.at && clip.at[0] === lastMouse[0] && clip.at[1] === lastMouse[1];
+    clip.stack = same ? clip.stack + 1 : 0; clip.at = lastMouse.slice();
+    dx = lastMouse[0] - Math.round((x0 + x1) / 2) + 2 * clip.stack; dy = lastMouse[1] - Math.round((y0 + y1) / 2) + 2 * clip.stack;
+  } else { clip.n++; dx = many ? (x1 - x0 + 4) * clip.n : 2 * clip.n; dy = many ? 0 : 2 * clip.n; }
+  const ns = new Set(), map = {}, made = [];
+  const order = clip.comps.filter(c => !T[c.type].follows).concat(clip.comps.filter(c => T[c.type].follows));
+  for (const c of order) {
+    const t = T[c.type], n = {id: nid('c'), type: c.type, x: c.x + dx, y: c.y + dy, r: c.r, tag: c.tag, p: JSON.parse(JSON.stringify(c.p))};
+    if (t.follows) n.tag = map[c.tag] || c.tag;
+    else if (t.prefix && n.type !== 'borne') { n.tag = (c.tag && map[c.tag]) || nextTag(t.prefix); if (c.tag) map[c.tag] = n.tag; }
+    if (t.air && t.kind === 'mech') { const k = +((/(\d+)$/.exec(n.tag) || [0, 1])[1]); if (c.p.fc0) map[c.p.fc0] = 'FC' + (2 * k - 1); if (c.p.fc1) map[c.p.fc1] = 'FC' + 2 * k; }
+    doc.comps.push(n); ns.add(n.id); made.push(n);
   }
-  for (const w of clip.wires) { const n = {id: nid('w'), pts: w.pts.map(p => [p[0] + d, p[1] + d])}; if (w.c) n.c = w.c; if (w.t) n.t = w.t; doc.wires.push(n); ns.add(n.id); }
-  selection = ns; changed();
+  /* lo que apunta a otras marcas: válvulas, cilindros */
+  for (const n of made) for (const f of ['valv', 'valv2', 't14', 't12', 'fc0', 'fc1']) if (n.p[f] && map[n.p[f]]) n.p[f] = map[n.p[f]];
+  for (const w of clip.wires) { const n = {id: nid('w'), pts: w.pts.map(p => [p[0] + dx, p[1] + dy])}; if (w.c) n.c = w.c; if (w.t) n.t = w.t; doc.wires.push(n); ns.add(n.id); }
+  selection = ns;
+  /* si ha caído fuera de la vista, se lleva hasta ella */
+  const r = sv.getBoundingClientRect(), cx = (x0 + x1) / 2 + dx, cy = (y0 + y1) / 2 + dy, sx = cx * G * view.k + view.x, sy = cy * G * view.k + view.y;
+  if (sx < 0 || sy < 0 || sx > r.width || sy > r.height) { view.x = r.width / 2 - cx * G * view.k; view.y = r.height / 2 - cy * G * view.k; applyView(); }
+  changed();
+  toast(made.length + clip.wires.length > 1 ? 'Pegado: ' + made.length + ' componentes y ' + clip.wires.length + ' cables' : 'Pegado');
 }
 function changed() { markDirty(); draw(); inspector(true); updateBtns(); plcSync(); }
 function updateBtns() {
@@ -2822,7 +2876,8 @@ sv.addEventListener('pointerdown', e => {
   const w = toWorld(e), g = snapG(w);
   const el = e.target.closest && e.target.closest('[data-id]');
   const hid = el && el.dataset.id !== 'ghost' ? el.dataset.id : null;
-  if (e.button === 2) return;
+  /* botón derecho: desplaza la vista con cualquier herramienta; sin mover, termina el cable o cancela */
+  if (e.button === 2) { drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, right: true}; return; }
   if (sim.on) {
     const c = hid && doc.comps.find(x => x.id === hid);
     if (c && isInteractive(T[c.type])) { simDown(c, e); return; }
@@ -2830,7 +2885,16 @@ sv.addEventListener('pointerdown', e => {
   }
   if (e.button === 1 || spaceDown) { drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false}; app.classList.add('panning'); return; }
   if (tool === 'place' && placing) { placeAt(g, e.shiftKey); return; }
-  if (tool === 'wire') { wireClick(pinAt(w) || g, e); return; }
+  if (tool === 'text') {
+    const tc = hid && doc.comps.find(x => x.id === hid && x.type === 'text');
+    drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, click: () => { if (tc) txEdit(tc); else txNew(g); }}; return;
+  }
+  if (tool === 'wire') {
+    /* En un borne o en otro cable se conecta; arrastrando en vacío se mueve por el plano, y un clic sin mover dobla el cable */
+    const on = pinAt(w) || (connectable(g) ? g : null);
+    if (on) { wireClick(on, e); return; }
+    drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, click: ev => wireClick(g, ev)}; return;
+  }
   /* Pinchar en un borne y arrastrar tira un cable, también con la herramienta de seleccionar */
   const pg = !e.shiftKey && pinAt(w);
   if (pg) { wireDraft = {pts: [pg]}; hover = pg; drag = {mode: 'wire', start: pg, moved: false, sel: true, hid}; draw(); return; }
@@ -2839,8 +2903,9 @@ sv.addEventListener('pointerdown', e => {
     else if (!selection.has(hid)) selection = new Set([hid]);
     beginMove(g); draw(); inspector(); updateBtns(); return;
   }
-  if (e.shiftKey) { drag = {mode: 'box', a: w, b: w}; return; }
-  drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, clear: true}; app.classList.add('panning');
+  /* En vacío: con el ratón, recuadro de selección; con el dedo, desplazar */
+  if (e.pointerType === 'touch') { drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, clear: true}; return; }
+  drag = {mode: 'box', a: w, b: w, add: e.shiftKey};
 });
 sv.addEventListener('pointermove', e => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [e.clientX, e.clientY]);
@@ -2851,27 +2916,52 @@ sv.addEventListener('pointermove', e => {
     view.k = nk; view.x = pinch.mx - wx * nk; view.y = pinch.my - wy * nk; applyView(); return;
   }
   const w = toWorld(e), g = snapG(w);
+  lastP = {clientX: e.clientX, clientY: e.clientY}; lastMouse = g;
   if (drag) {
     if (drag.mode === 'pan') {
       const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (!drag.moved && Math.abs(dx) + Math.abs(dy) <= 4) return;
+      if (!drag.moved) { drag.moved = true; app.classList.add('panning'); }
       view.x = drag.vx + dx; view.y = drag.vy + dy; applyView(); return;
     }
-    if (drag.mode === 'move') {
-      const dx = g[0] - drag.start[0], dy = g[1] - drag.start[1];
-      if (dx !== drag.dx || dy !== drag.dy) { if (!drag.moved) { snap(); drag.moved = true; } drag.dx = dx; drag.dy = dy; applyMove(dx, dy); draw(); }
-      return;
-    }
-    if (drag.mode === 'box') { drag.b = w; draw(); return; }
-    if (drag.mode === 'wire') {
-      const h = pinAt(w) || g;
-      if (h[0] !== drag.start[0] || h[1] !== drag.start[1]) drag.moved = true;
-      if (!hover || hover[0] !== h[0] || hover[1] !== h[1]) { hover = h; draw(); }
-      return;
-    }
+    dragAt(w, g); edgeStart();
+    return;
   }
+  if (!sim.on && tool === 'wire' && wireDraft) edgeStart();
   if (!sim.on && (tool === 'wire' || tool === 'place')) { if (!hover || hover[0] !== g[0] || hover[1] !== g[1]) { hover = g; draw(); } }
 });
+/* Arrastre en curso: mover, recuadro o cable */
+function dragAt(w, g) {
+  if (drag.mode === 'move') {
+    const dx = g[0] - drag.start[0], dy = g[1] - drag.start[1];
+    if (dx !== drag.dx || dy !== drag.dy) { if (!drag.moved) { snap(); drag.moved = true; } drag.dx = dx; drag.dy = dy; applyMove(dx, dy); draw(); }
+  } else if (drag.mode === 'box') { drag.b = w; draw(); }
+  else if (drag.mode === 'wire') {
+    const h = pinAt(w) || g;
+    if (h[0] !== drag.start[0] || h[1] !== drag.start[1]) drag.moved = true;
+    if (!hover || hover[0] !== h[0] || hover[1] !== h[1]) { hover = h; draw(); }
+  }
+}
+/* Con el ratón pegado al borde de la hoja mientras se tira un cable, se mueve o se selecciona, la vista avanza sola */
+let lastP = null, lastMouse = null, edgeT = 0;
+function edgeStart() { if (!edgeT) edgeT = setInterval(edgeTick, 40); }
+function edgeTick() {
+  const busy = lastP && !sim.on && ((drag && drag.mode !== 'pan') || (tool === 'wire' && wireDraft));
+  if (!busy) { clearInterval(edgeT); edgeT = 0; return; }
+  const r = sv.getBoundingClientRect(), M = 26, S = 14;
+  const dx = lastP.clientX < r.left + M ? S : lastP.clientX > r.right - M ? -S : 0, dy = lastP.clientY < r.top + M ? S : lastP.clientY > r.bottom - M ? -S : 0;
+  if (!dx && !dy) return;
+  view.x += dx; view.y += dy; applyView();
+  const w = toWorld(lastP), g = snapG(w);
+  if (drag) dragAt(w, g); else { hover = g; draw(); }
+}
+/* Cables con los dos extremos en bornes de los componentes elegidos: van con ellos aunque no se hayan marcado */
+function wiresBetween(ids) {
+  const pts = new Set();
+  for (const c of doc.comps) if (ids.has(c.id)) for (const q of wpins(c)) pts.add(q[0] + ',' + q[1]);
+  for (const w of doc.wires) if (ids.has(w.id)) for (const q of w.pts) pts.add(q[0] + ',' + q[1]);
+  return doc.wires.filter(w => { const a = w.pts[0], b = w.pts[w.pts.length - 1]; return pts.has(a[0] + ',' + a[1]) && pts.has(b[0] + ',' + b[1]); });
+}
 function endPointer(e) {
   pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null;
   release();
@@ -2891,6 +2981,8 @@ function endPointer(e) {
     }
     return;
   }
+  if (d.mode === 'pan' && d.right) { if (!d.moved) { if (tool === 'wire') finishWire(); else if (tool === 'place') setTool('select'); } return; }
+  if (d.mode === 'pan' && d.click) { if (!d.moved) { d.click(e); drag = null; } return; }
   if (d.mode === 'pan' && d.clear && !d.moved && selection.size) { selection.clear(); draw(); inspector(); updateBtns(); }
   else if (d.mode === 'move' && d.moved) {
     for (const o of d.rubber.concat(d.wires)) o.w.pts = norm(o.w.pts);
@@ -2898,15 +2990,19 @@ function endPointer(e) {
     changed();
   } else if (d.mode === 'box') {
     const x0 = Math.min(d.a[0], d.b[0]), x1 = Math.max(d.a[0], d.b[0]), y0 = Math.min(d.a[1], d.b[1]), y1 = Math.max(d.a[1], d.b[1]);
-    for (const c of doc.comps) { const b = wbox(c); if (b[0] < x1 && b[2] > x0 && b[1] < y1 && b[3] > y0) selection.add(c.id); }
-    for (const w of doc.wires) if (w.pts.every(p => p[0] * G >= x0 && p[0] * G <= x1 && p[1] * G >= y0 && p[1] * G <= y1)) selection.add(w.id);
+    if (!d.add) selection = new Set();
+    if (x1 - x0 > 3 || y1 - y0 > 3) {
+      for (const c of doc.comps) { const b = wbox(c); if (b[0] < x1 && b[2] > x0 && b[1] < y1 && b[3] > y0) selection.add(c.id); }
+      for (const w of doc.wires) if (w.pts.every(p => p[0] * G >= x0 && p[0] * G <= x1 && p[1] * G >= y0 && p[1] * G <= y1)) selection.add(w.id);
+      for (const w of wiresBetween(selection)) selection.add(w.id);
+    }
     draw(); inspector(); updateBtns();
   }
 }
 sv.addEventListener('pointerup', endPointer);
 sv.addEventListener('pointercancel', endPointer);
-sv.addEventListener('pointerleave', () => { if (!drag && hover && tool !== 'select') { hover = null; draw(); } });
-sv.addEventListener('contextmenu', e => { e.preventDefault(); if (tool === 'wire') finishWire(); else if (tool === 'place') setTool('select'); });
+sv.addEventListener('pointerleave', () => { lastMouse = null; if (!drag) lastP = null; if (!drag && hover && tool !== 'select') { hover = null; draw(); } });
+sv.addEventListener('contextmenu', e => e.preventDefault());
 sv.addEventListener('wheel', e => {
   e.preventDefault();
   const r = sv.getBoundingClientRect();
@@ -2927,7 +3023,8 @@ window.addEventListener('keydown', e => {
   if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
   if (mod && k === 'y') { e.preventDefault(); doRedo(); return; }
   if (mod && k === 'c') { if (copySel()) toast('Copiado'); return; }
-  if (mod && k === 'v') { paste(); return; }
+  if (mod && k === 'x') { if (copySel()) { delSel(); toast('Cortado: Ctrl+V para pegarlo'); } return; }
+  if (mod && k === 'v') { paste(true); return; }
   if (mod && k === 'd') { e.preventDefault(); if (copySel()) paste(); return; }
   if (mod && k === 's') { e.preventDefault(); flushAll().then(w => toast(w === 'cloud' ? 'Guardado en tu cuenta' : w === 'fail' ? 'Este navegador no deja guardar: exporte una copia .json' : 'Guardado en este navegador', w === 'fail' ? 'err' : '')); return; }
   if (mod && k === 'o') { e.preventDefault(); openHome('abrir'); return; }
@@ -2937,6 +3034,7 @@ window.addEventListener('keydown', e => {
   switch (k) {
     case 'v': setTool('select'); break;
     case 'w': case 'c': setTool('wire'); break;
+    case 't': setTool('text'); break;
     case 'r': rotateSel(); break;
     case 'delete': case 'backspace': e.preventDefault(); delSel(); break;
     case 'f': fit(); break;
@@ -2954,7 +3052,7 @@ window.addEventListener('keyup', e => { if (e.key === ' ') spaceDown = false; })
 
 /* ---------- cajón de componentes ---------- */
 function icon(k) {
-  const t = T[k], b = t.box, st = (t.kind === 'sw' || t.kind === 'sw3') ? {closed: t.drive === 'self' ? true : !!t.rest} : {};
+  const t = T[k], b = t.ibox || t.box, st = (t.kind === 'sw' || t.kind === 'sw3') ? {closed: t.drive === 'self' ? true : !!t.rest} : {};
   if (k === 'text') return '<svg viewBox="0 0 40 30"><path d="M10 7h20M20 7v17" stroke="#1A2724" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>';
   const fake = {type: k, tag: '', p: Object.assign({}, t.defaults)};
   const w = b[2] - b[0] + 12, h = b[3] - b[1] + 12;
@@ -3030,8 +3128,8 @@ function inspector(force) {
       <div class="fld"><span>Grosor</span><div class="seg">${thick(ws[0].t)}</div></div>`;
     if (ws.length === 1) h += `<label class="fld"><span>Etiqueta o número</span><input data-wf="lab" id="f-lab" value="${hx(ws[0].lab || '')}" maxlength="14" placeholder="p. ej. 12 o L1"></label>`;
   }
-  h += `<p class="desc">${sel.length === 1 ? 'Arrástrelo para moverlo entero. Para cambiar su recorrido, bórrelo y vuelva a trazarlo.' : 'Arrastre cualquiera de ellos para mover el grupo. Ctrl+D lo duplica.'}</p>
-    <div class="acts">${nc ? '<button class="btn" data-act="rot">Girar 90°</button>' : ''}<button class="btn" data-act="dup">Duplicar</button><button class="btn danger" data-act="del">Eliminar</button></div>`;
+  h += `<p class="desc">${sel.length === 1 ? 'Arrástrelo para moverlo entero. Para cambiar su recorrido, bórrelo y vuelva a trazarlo.' : 'Arrastre cualquiera de ellos para mover el grupo. Ctrl+C y Ctrl+V lo copian donde esté el ratón, con las marcas renumeradas.'}</p>
+    <div class="acts">${nc && sel.length === 1 ? '<button class="btn" data-act="rot">Girar 90°</button>' : ''}<button class="btn" data-act="copy">Copiar</button><button class="btn" data-act="dup">Duplicar</button><button class="btn danger" data-act="del">Eliminar</button></div>`;
   ib.innerHTML = h;
 }
 function compPanel(c) {
@@ -3089,11 +3187,80 @@ function compPanel(c) {
       <div class="acts" style="margin-top:0"><button class="btn pri" data-act="plc">Editar programa</button></div>
       <p class="desc">${g.length} segmento${g.length === 1 ? '' : 's'}${used.length ? ' · usa ' + hx(used.join(', ')) : ''}. Las salidas son contactos de relé: Q1 cierra entre sus dos bornes, igual que un interruptor.</p>`;
   }
-  if (c.type === 'text') h += `<label class="fld"><span>Texto</span><input data-f="text" id="f-text" value="${hx(c.p.text)}" maxlength="80"></label>`;
+  if (c.type === 'text') h += `<label class="fld"><span>Texto</span><textarea data-f="text" id="f-text" maxlength="4000">${hx(c.p.text)}</textarea></label><div class="fld"><span>Formato</span>${txBar(c.p)}</div>`;
   h += `<div class="acts">${T[c.type].pins.length > 1 ? '<button class="btn" data-act="rot">Girar 90°</button>' : ''}<button class="btn" data-act="dup">Duplicar</button><button class="btn danger" data-act="del">Eliminar</button></div>`;
   if (nums) h += `<div class="terms">Bornes ${hx(nums.join(' · '))}</div>`;
   return h;
 }
+/* ---------- herramienta de texto: se escribe directamente sobre la hoja ---------- */
+let txEd = null, txLast = {};
+const TXI = {start: 'M4 6h16M4 12h10M4 18h13', middle: 'M4 6h16M7 12h10M5.5 18h13', end: 'M4 6h16M10 12h10M7 18h13'};
+function txBar(p) {
+  return `<div class="txbar"><button data-tx="size:-" title="Más pequeño" aria-label="Más pequeño">A−</button><span class="sz">${+p.size || 14}</span><button data-tx="size:+" title="Más grande" aria-label="Más grande">A+</button><span class="sp"></span>
+    <button class="${p.bold ? 'on' : ''}" data-tx="bold" title="Negrita (Ctrl+B)" aria-label="Negrita" style="font-weight:800">N</button><button class="${p.ital ? 'on' : ''}" data-tx="ital" title="Cursiva (Ctrl+I)" aria-label="Cursiva" style="font-style:italic">K</button><span class="sp"></span>
+    ${Object.keys(TXI).map(a => `<button class="${(p.align || 'start') === a ? 'on' : ''}" data-tx="align:${a}" aria-label="Alinear"><svg viewBox="0 0 24 24"><path d="${TXI[a]}"/></svg></button>`).join('')}<span class="sp"></span>
+    ${Object.keys(TXC).map(k => `<button class="${(p.color || 'ink') === k ? 'on' : ''}" data-tx="color:${k}" aria-label="Color ${k}"><i class="dot" style="background:${TXC[k]}"></i></button>`).join('')}</div>`;
+}
+function txSet(p, act) {
+  const [k, v] = act.split(':');
+  if (k === 'size') { const i = TXS.indexOf(+p.size || 14), j = i < 0 ? 2 : clamp(i + (v === '+' ? 1 : -1), 0, TXS.length - 1); p.size = TXS[j]; }
+  else if (k === 'bold' || k === 'ital') p[k] = !p[k];
+  else if (k === 'align' || k === 'color') p[k] = v;
+  txLast = {size: p.size, bold: p.bold, ital: p.ital, color: p.color, align: p.align};
+}
+function txPos() {
+  if (!txEd) return;
+  const {c, wrap, ta} = txEd, p = c.p, k = view.k, s = (+p.size || 14) * k, L = ta.value.split('\n');
+  meas.font = txFont(p);
+  const w = Math.max(150, Math.max(...L.map(t => meas.measureText(t).width)) * k + s * 2 + 14), hh = L.length * s * 1.3 + 8;
+  const X = c.x * G * k + view.x, Y = c.y * G * k + view.y, left = p.align === 'middle' ? X - w / 2 : p.align === 'end' ? X - w + 6 : X - 6, top = Y - s * 0.75 - 3;
+  wrap.style.left = left + 'px'; wrap.style.top = top + 'px'; wrap.style.width = w + 'px'; wrap.style.height = hh + 'px';
+  wrap.classList.toggle('low', top < 48);
+  ta.style.font = `${p.ital ? 'italic ' : ''}${p.bold ? 700 : 500} ${s}px/1.3 var(--f-ui)`; ta.style.color = TXC[p.color] || TXC.ink; ta.style.textAlign = p.align === 'middle' ? 'center' : p.align === 'end' ? 'right' : 'left';
+}
+function txOpen(c, pend, isNew) {
+  c._editing = true; selection = new Set(); draw(); inspector(true); updateBtns();
+  const wrap = document.createElement('div'); wrap.className = 'txed';
+  wrap.innerHTML = txBar(c.p) + '<textarea aria-label="Texto del plano" spellcheck="false" maxlength="4000"></textarea>';
+  $('#canvas').appendChild(wrap);
+  const ta = wrap.querySelector('textarea'); ta.value = c.p.text || '';
+  txEd = {c, wrap, ta, pend, isNew};
+  ta.addEventListener('input', txPos);
+  ta.addEventListener('keydown', e => {
+    e.stopPropagation();
+    const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (e.key === 'Escape' || (mod && e.key === 'Enter')) { e.preventDefault(); txClose(); }
+    else if (mod && (k === 'b' || k === 'n')) { e.preventDefault(); txSet(c.p, 'bold'); txBarRefresh(); }
+    else if (mod && (k === 'i' || k === 'k')) { e.preventDefault(); txSet(c.p, 'ital'); txBarRefresh(); }
+  });
+  /* los botones no le quitan el foco al texto */
+  wrap.addEventListener('pointerdown', e => {
+    if (e.target === ta) return;
+    e.preventDefault();
+    const b = e.target.closest('[data-tx]'); if (b) { txSet(c.p, b.dataset.tx); txBarRefresh(); }
+  });
+  txPos(); ta.focus(); ta.select();
+  setTimeout(() => { if (txEd && txEd.ta === ta) ta.focus(); }, 60);
+}
+function txBarRefresh() { if (!txEd) return; const old = txEd.wrap.querySelector('.txbar'), tmp = document.createElement('div'); tmp.innerHTML = txBar(txEd.c.p); old.replaceWith(tmp.firstElementChild); txPos(); }
+function txClose() {
+  if (!txEd) return;
+  const {c, wrap, ta, pend, isNew} = txEd; txEd = null;
+  c.p.text = ta.value.replace(/\s+$/, ''); delete c._editing; wrap.remove();
+  const empty = !c.p.text.trim();
+  if (empty) { doc.comps = doc.comps.filter(x => x !== c); selection.delete(c.id); }
+  else selection = new Set([c.id]);
+  if (empty ? !isNew : (isNew || pend !== bookStr())) { undoS.push(pend); redoS.length = 0; }
+  setTool('select', true); hint(); changed();
+}
+function txNew(g) {
+  if (sim.on) return;
+  const pend = bookStr(), c = {id: nid('c'), type: 'text', x: g[0], y: g[1], r: 0, tag: '', p: Object.assign({}, T.text.defaults, txLast, {text: ''})};
+  doc.comps.push(c); txOpen(c, pend, true);
+}
+function txEdit(c) { if (!sim.on) txOpen(c, bookStr(), false); }
+document.addEventListener('pointerdown', e => { if (txEd && !txEd.wrap.contains(e.target)) txClose(); }, true);
+
 const TAGF = ['tag', 'valv', 'valv2', 'fc0', 'fc1', 't14', 't12'], NUMF = {delay: [0.1, 600], In: [0.5, 630], n: [1, 999], t: [0.2, 60], pct: [5, 100], f1: [1, 100], f2: [1, 100], ramp: [0.2, 60], rampOff: [0.2, 60]};
 ib.addEventListener('focusin', e => { if (e.target.dataset && (e.target.dataset.f || e.target.dataset.wf)) pend = bookStr(); });
 ib.addEventListener('input', e => {
@@ -3119,12 +3286,14 @@ function applyWires(fn) { const ws = selWires(); if (!ws.length) return; snap();
 ib.addEventListener('click', e => {
   const wc = e.target.closest('[data-wc]'); if (wc) { const k = wc.dataset.wc; wstyle.c = k; applyWires(w => { if (k === 'auto') delete w.c; else w.c = k; }); return; }
   const wt = e.target.closest('[data-wt]'); if (wt) { const k = wt.dataset.wt; wstyle.t = k; applyWires(w => { if (k === 'g') w.t = 'g'; else delete w.t; }); return; }
+  const tb = e.target.closest('[data-tx]'); if (tb) { const c = selComp(); if (c && c.type === 'text') { snap(); txSet(c.p, tb.dataset.tx); changed(); } return; }
   const iv = e.target.closest('[data-inv]'); if (iv) { const c = selComp(); if (c) { snap(); c.p.nc = iv.dataset.inv === '1'; changed(); } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
   if (a === 'rot') rotateSel();
   else if (a === 'del') delSel();
   else if (a === 'dup') { if (copySel()) paste(); }
+  else if (a === 'copy') { if (copySel()) toast('Copiado: Ctrl+V lo pega donde esté el ratón'); }
   else if (a === 'stop') simStop();
   else runAction(a);
 });
@@ -3199,9 +3368,10 @@ $('#insp-tog').addEventListener('click', () => $('#insp').classList.toggle('open
 
 function hint() {
   $('#hint').textContent = sim.on ? 'Mantenga pulsados los pulsadores · Mayús+clic los enclava · clic en interruptores, sensores, protecciones y relés térmicos'
-    : tool === 'wire' ? 'Clic en un borne para empezar · cada clic dobla el cable · termina al llegar a otro borne o cable · Esc para terminar'
+    : tool === 'wire' ? 'Clic en un borne para empezar · cada clic dobla el cable · arrastre en vacío o botón derecho para moverse por el plano · Esc para terminar'
+    : tool === 'text' ? 'Clic en la hoja para escribir · Intro para otra línea · Esc o clic fuera para terminar'
     : tool === 'place' ? 'Clic en la hoja para colocar · R gira · Mayús+clic coloca varios · Esc cancela'
-    : 'Arrastre para mover · Mayús+arrastre selecciona varios · arrastre en vacío o Espacio para desplazar la vista · Ctrl+K busca componentes';
+    : 'Arrastre en vacío para seleccionar varios · Ctrl+C y Ctrl+V copian · botón derecho o Espacio para moverse por el plano · rueda para acercar';
 }
 
 /* ---------- hojas del plano ---------- */
@@ -3434,6 +3604,7 @@ function plcMenuAct(act) {
 }
 sv.addEventListener('dblclick', e => {
   const el = e.target.closest && e.target.closest('[data-id]'), c = el && doc.comps.find(x => x.id === el.dataset.id);
+  if (c && c.type === 'text' && !sim.on) { drag = null; txEdit(c); return; }
   if (c && c.type === 'xref') {
     /* salta a la pareja del conector (mejor en otra hoja) */
     const L = []; book.sheets.forEach((s, i) => { for (const x of s.comps) if (x !== c && x.type === 'xref' && x.tag === c.tag) L.push([i, x]); });
@@ -3733,13 +3904,15 @@ function arcTo(out, x1, y1, rx, ry, phi, fa, fs, x2, y2) {
   for (let k = 1; k <= n; k++) { const t = t1 + dt * k / n; out.push([ccx + rx * Math.cos(t) * cs - ry * Math.sin(t) * sn, ccy + rx * Math.cos(t) * sn + ry * Math.sin(t) * cs]); }
 }
 function pathPolys(d) {
-  const tk = d.match(/[MLHVAZ]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) || [];
+  const tk = d.match(/[MLHVAZQC]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) || [];
   let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, cur = null; const polys = [];
   const n = () => parseFloat(tk[i++]);
   while (i < tk.length) {
     if (/^[A-Za-z]$/.test(tk[i])) { cmd = tk[i++].toUpperCase(); if (cmd === 'Z') { if (cur) cur.closed = true; x = sx; y = sy; continue; } }
     if (cmd === 'M') { x = n(); y = n(); sx = x; sy = y; cur = {pts: [[x, y]], closed: false}; polys.push(cur); cmd = 'L'; }
     else if (cmd === 'L') { x = n(); y = n(); cur.pts.push([x, y]); }
+    else if (cmd === 'Q') { const a = n(), b = n(), x2 = n(), y2 = n(); for (let q = 1; q <= 8; q++) { const u = q / 8, v = 1 - u; cur.pts.push([v * v * x + 2 * v * u * a + u * u * x2, v * v * y + 2 * v * u * b + u * u * y2]); } x = x2; y = y2; }
+    else if (cmd === 'C') { const a = n(), b = n(), c = n(), e = n(), x2 = n(), y2 = n(); for (let q = 1; q <= 10; q++) { const u = q / 10, v = 1 - u; cur.pts.push([v * v * v * x + 3 * v * v * u * a + 3 * v * u * u * c + u * u * u * x2, v * v * v * y + 3 * v * v * u * b + 3 * v * u * u * e + u * u * u * y2]); } x = x2; y = y2; }
     else if (cmd === 'H') { x = n(); cur.pts.push([x, y]); }
     else if (cmd === 'V') { y = n(); cur.pts.push([x, y]); }
     else if (cmd === 'A') { const rx = n(), ry = n(), ph = n(), fa = n(), fs = n(), x2 = n(), y2 = n(); arcTo(cur.pts, x, y, rx, ry, ph, fa, fs, x2, y2); x = x2; y = y2; }
@@ -3776,7 +3949,7 @@ function collectOps() {
     else if (tag === 'text') {
       if (!fCol) return;
       const p = TR(A('x'), A('y')), central = el.getAttribute('dominant-baseline') === 'central';
-      ops.push({k: 't', x: p[0], y: p[1], central, s: el.textContent, size: parseFloat(cs.fontSize) * sc, bold: (parseInt(cs.fontWeight) || 400) >= 600, mono: /mono/i.test(cs.fontFamily), anchor: cs.textAnchor || 'start', fc: fCol, fa: st.fa, layer: 'TEXTOS'});
+      ops.push({k: 't', x: p[0], y: p[1], central, s: el.textContent, size: parseFloat(cs.fontSize) * sc, bold: (parseInt(cs.fontWeight) || 400) >= 600, ital: cs.fontStyle === 'italic', mono: /mono/i.test(cs.fontFamily), anchor: cs.textAnchor || 'start', fc: fCol, fa: st.fa, layer: 'TEXTOS'});
     }
   });
   host.remove();
@@ -3815,7 +3988,7 @@ function pdfDoc(pages, size) {
   for (const o of ops) {
     if (o.k === 't') {
       if (!o.fc || o.fa < 0.05) continue;
-      const fn = o.mono ? (o.bold ? 'F4' : 'F3') : (o.bold ? 'F2' : 'F1'), pt = o.size * s, w = textW(o) * s;
+      const fn = o.mono ? (o.bold ? 'F4' : 'F3') : o.ital ? (o.bold ? 'F6' : 'F5') : (o.bold ? 'F2' : 'F1'), pt = o.size * s, w = textW(o) * s;
       let x = X(o.x); if (o.anchor === 'middle') x -= w / 2; else if (o.anchor === 'end') x -= w;
       out.push('q', gs(o.fa, 1), rgb(o.fc) + ' rg', 'BT', `/${fn} ${f(pt)} Tf`, `${f(x)} ${f(Y(baseY(o)))} Td`, `(${pdfStr(o.s)}) Tj`, 'ET', 'Q');
       continue;
@@ -3855,12 +4028,12 @@ function pdfDoc(pages, size) {
   const add = str => { objs.push(str); return objs.length; };
   add('<< /Type /Catalog /Pages 2 0 R >>');
   add('');
-  ['Helvetica', 'Helvetica-Bold', 'Courier', 'Courier-Bold'].forEach(fn => add(`<< /Type /Font /Subtype /Type1 /BaseFont /${fn} /Encoding /WinAnsiEncoding >>`));
+  ['Helvetica', 'Helvetica-Bold', 'Courier', 'Courier-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique'].forEach(fn => add(`<< /Type /Font /Subtype /Type1 /BaseFont /${fn} /Encoding /WinAnsiEncoding >>`));
   const gsDict = [...gsMap.values()].map(g => `/${g.n} << /Type /ExtGState /ca ${g.fa} /CA ${g.sa} >>`).join(' ');
   const kids = [];
   for (const content of contents) {
     const pn = objs.length + 1; kids.push(pn + ' 0 R');
-    add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${f(PW)} ${f(PH)}] /Contents ${pn + 1} 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >> /ExtGState << ${gsDict} >> >> >>`);
+    add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${f(PW)} ${f(PH)}] /Contents ${pn + 1} 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R /F5 7 0 R /F6 8 0 R >> /ExtGState << ${gsDict} >> >> >>`);
     add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
   }
   objs[1] = `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${kids.length} >>`;
@@ -3944,7 +4117,7 @@ function svgDoc(ops) {
   const col = c => c ? `rgb(${c[0]},${c[1]},${c[2]})` : 'none';
   const P = [`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(bb[0])} ${f(bb[1])} ${f(w)} ${f(h)}" width="${f(w)}" height="${f(h)}">`, `<title>${hx(tabs[cur].name)}</title>`, `<rect x="${f(bb[0])}" y="${f(bb[1])}" width="${f(w)}" height="${f(h)}" fill="#ffffff"/>`];
   for (const o of ops) {
-    if (o.k === 't') { if (!o.fc) continue; P.push(`<text x="${f(o.x)}" y="${f(baseY(o))}" font-family="${o.mono ? "'IBM Plex Mono',Consolas,monospace" : "'IBM Plex Sans',Arial,sans-serif"}" font-size="${f(o.size)}" font-weight="${o.bold ? 600 : 400}" text-anchor="${o.anchor}" fill="${col(o.fc)}"${o.fa < 1 ? ` fill-opacity="${f(o.fa)}"` : ''}>${hx(o.s)}</text>`); continue; }
+    if (o.k === 't') { if (!o.fc) continue; P.push(`<text x="${f(o.x)}" y="${f(baseY(o))}" font-family="${o.mono ? "'IBM Plex Mono',Consolas,monospace" : "'IBM Plex Sans',Arial,sans-serif"}" font-size="${f(o.size)}" font-weight="${o.bold ? 600 : 400}"${o.ital ? ' font-style="italic"' : ''} text-anchor="${o.anchor}" fill="${col(o.fc)}"${o.fa < 1 ? ` fill-opacity="${f(o.fa)}"` : ''}>${hx(o.s)}</text>`); continue; }
     const a = `fill="${o.fc && (o.k === 'c' || o.closed) ? col(o.fc) : 'none'}"${o.fc && o.fa < 1 ? ` fill-opacity="${f(o.fa)}"` : ''} stroke="${col(o.sc)}"${o.sc && o.sa < 1 ? ` stroke-opacity="${f(o.sa)}"` : ''} stroke-width="${f(o.sw)}" stroke-linecap="round" stroke-linejoin="round"${o.dash ? ` stroke-dasharray="${o.dash.map(f).join(' ')}"` : ''}`;
     if (o.k === 'c') P.push(`<circle cx="${f(o.cx)}" cy="${f(o.cy)}" r="${f(o.r)}" ${a}/>`);
     else P.push(`<${o.closed ? 'polygon' : 'polyline'} points="${o.pts.map(p => f(p[0]) + ',' + f(p[1])).join(' ')}" ${a}/>`);
@@ -4363,7 +4536,7 @@ function renderHome() {
         <li>Doble clic sobre el PLC (o «Editar programa») abre el programa en contactos: columnas en serie (Y) con contactos en paralelo (O) y una salida por segmento: bobina, Set, Reset, temporizadores TON y TOF y contador.</li>
         <li>Al simular, el programa se pinta en verde por donde pasa la corriente. Un pulsador NC cableado a una entrada pone esa entrada a 1 en reposo: en el programa se usa como NA.</li></ol>
       <h4>Código de colores</h4><div class="leg"><div><i style="background:var(--l1)"></i>Fases L1, L2, L3 · marrón, negro y gris</div><div><i style="background:var(--n)"></i>Neutro · azul</div><div><i style="background:repeating-linear-gradient(90deg,var(--pe) 0 8px,#E9C81C 8px 13px)"></i>Protección (tierra) · verde-amarillo, solo para ella</div><div><i style="background:#D0342C"></i>Mando · rojo (habitual en cuadros)</div></div>
-      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / W</kbd><span>Seleccionar / cable</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
+      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / W / T</kbd><span>Seleccionar / cable / texto</span><kbd>Clic derecho + arrastrar</kbd><span>Moverse por el plano (también Espacio + arrastrar)</span><kbd>Arrastrar en vacío</kbd><span>Seleccionar varios</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
   }
   else h += `<h1>Abrir</h1><div class="drop" id="h-drop"><span>Arrastre aquí un archivo .json del programa, o</span><button class="btn" data-hact="import">Importar archivo…</button></div>
     <div class="hstore"><span class="sst" data-sst></span>${Store.col ? '' : WEB ? (FB ? '<button class="btn sm" data-hs="cuenta">Inicia sesión para tenerlos en cualquier ordenador</button>' : '') : '<button class="btn sm" data-hact="cloud">Guardar también en mi cuenta de Claude</button>'}</div>
