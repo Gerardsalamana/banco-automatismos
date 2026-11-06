@@ -531,6 +531,7 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
       <button class="btn on" id="t-select" data-tool="select" title="Mover: arrastrar desplaza el plano y un clic elige un componente (V)"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span class="lbl">Mover</span></button>
       <button class="btn" id="t-box" data-tool="box" title="Selección: arrastrar marca varios componentes con un recuadro (B)"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z" stroke-dasharray="3 3"/></svg><span class="lbl">Selección</span></button>
       <button class="btn" id="t-wire" data-tool="wire" title="Dibujar cable (W)"><svg viewBox="0 0 24 24"><path d="M4 18h6V6h10"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="6" r="1.6"/></svg><span class="lbl">Cable</span></button>
+      <button class="btn" id="t-wire3" title="Tirar varios cables a la vez. Otro clic cambia el número (teclas 2 a 5)"><svg viewBox="0 0 24 24"><path d="M3 6h9v12h9M3 10h5v12h13M3 2h13v12h5" transform="translate(0 0)"/></svg><span class="lbl">3 cables</span></button>
       <button class="btn" id="t-text" data-tool="text" title="Escribir texto en el plano (T)"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span class="lbl">Texto</span></button>
       <button class="btn wsw" id="b-wst" title="Color y grosor del cable" aria-label="Color y grosor del cable"><i id="wst-i"></i></button>
     </div>
@@ -2565,6 +2566,7 @@ function netCls(r, srcs) {
 /* ---------- dibujo ---------- */
 const app = $('#app'), sv = $('#sv'), world = $('#world');
 let view = {x: 0, y: 0, k: 1};
+let wireN = 1, wireLast = 3;
 let tool = 'select', placing = null, drag = null, wireDraft = null, hover = null, spaceDown = false, flash = null;
 
 function wbox(c) {
@@ -2642,7 +2644,8 @@ function draw() {
     for (const c of doc.comps) if (selection.has(c.id)) { const b = wbox(c); P.push(rc(b[0] - 6, b[1] - 6, b[2] - b[0] + 12, b[3] - b[1] + 12, 'selbox', 5)); }
     if (drag && drag.mode === 'box') { const a = drag.a, b = drag.b; P.push(rc(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), 'mbox')); }
     if (tool === 'wire' || (drag && drag.mode === 'wire')) {
-      if (wireDraft) { let p = wireDraft.pts; if (hover) p = p.concat(routeTo(p[p.length - 1], hover)); if (p.length > 1) P.push(`<path class="draft" d="${pathD(p)}"/>`); }
+      if (wireDraft && wireDraft.multi) { for (const p of multiRoutes(wireDraft.multi, hover || wireDraft.pts[0])) P.push(`<path class="draft" d="${pathD(norm(p))}"/>`); }
+      else if (wireDraft) { let p = wireDraft.pts; if (hover) p = p.concat(routeTo(p[p.length - 1], hover)); if (p.length > 1) P.push(`<path class="draft" d="${pathD(p)}"/>`); }
       if (hover) P.push(`<circle class="hov${connectable(hover) ? ' ok' : ''}" cx="${hover[0] * G}" cy="${hover[1] * G}" r="6"/>`);
     }
     if (tool === 'place' && placing && hover) P.push(compSVG({id: 'ghost', type: placing.type, x: hover[0], y: hover[1], r: placing.r, tag: defaultTag(placing.type), p: Object.assign({}, T[placing.type].defaults)}, ' ghost'));
@@ -2717,6 +2720,9 @@ function setTool(t, quiet) {
   app.classList.toggle('tool-wire', t === 'wire'); app.classList.toggle('tool-place', t === 'place'); app.classList.toggle('tool-select', t === 'select');
   app.classList.toggle('tool-text', t === 'text'); app.classList.toggle('tool-box', t === 'box');
   document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  $('#t-wire').classList.toggle('on', t === 'wire' && wireN === 1);
+  $('#t-wire3').classList.toggle('on', t === 'wire' && wireN > 1);
+  $('#t-wire3').querySelector('.lbl').textContent = wireLast + ' cables';
   document.querySelectorAll('.it').forEach(b => b.classList.toggle('on', !!placing && b.dataset.type === placing.type));
   hint(); if (!quiet) { draw(); updateBtns(); }
 }
@@ -2753,6 +2759,128 @@ function finishWire(at) {
 }
 /* Al terminar un cable se pregunta qué conductor es: así se aprende el código de colores */
 const CODE = [['marron', 'L1 · fase', 'marrón'], ['negro', 'L2 · fase', 'negro'], ['gris', 'L3 · fase', 'gris'], ['azul', 'N · neutro', 'azul'], ['pe', 'PE · tierra', 'verde-amarillo'], ['rojo', 'Mando', 'rojo'], ['auto', 'Sin color', 'negro de plano']];
+/* ---------- varios cables a la vez ----------
+   Se tira de una fila de bornes (L1 L2 L3, U V W…) a otra. Las rutas van en paralelo y escalonadas:
+   ningún vértice cae sobre otro cable, porque eso los conectaría y haría un cortocircuito. */
+function setWireN(n) {
+  if (sim.on) return;
+  wireN = n; if (n > 1) wireLast = n;
+  wireDraft = null; hover = null; setTool('wire');
+}
+/* Fila de n puntos que contiene p: primero los bornes de su componente; si no, bornes y puntas de cable alineados */
+function rowAt(p, n) {
+  const same = q => q[0] === p[0] && q[1] === p[1];
+  const pick = (row, ax, out) => {
+    row = row.slice().sort((u, v) => u[ax] - v[ax]);
+    const j = row.findIndex(same); if (j < 0 || row.length < n) return null;
+    const s = Math.min(j, row.length - n);
+    return {pts: row.slice(s, s + n), ax, j: j - s, out};
+  };
+  for (const c of doc.comps) {
+    const ps = wpins(c); if (!ps.some(same)) continue;
+    const r = pick(ps.filter(q => q[1] === p[1]), 0, Math.sign(p[1] - c.y) || 1) || pick(ps.filter(q => q[0] === p[0]), 1, Math.sign(p[0] - c.x) || 1);
+    if (r) return r;
+  }
+  const all = [...GEO.cnt.keys()].map(k => k.split(',').map(Number));
+  for (const ax of [0, 1]) {
+    const line = all.filter(q => q[1 - ax] === p[1 - ax]).sort((u, v) => u[ax] - v[ax]);
+    let j = line.findIndex(same); if (j < 0) continue;
+    let a = j, b = j;
+    while (a > 0 && line[a][ax] - line[a - 1][ax] <= 3) a--;
+    while (b < line.length - 1 && line[b + 1][ax] - line[b][ax] <= 3) b++;
+    const r = pick(line.slice(a, b + 1), ax, 1); if (r) return r;
+  }
+  return null;
+}
+/* Barras apiladas: cada cable baja recto a la suya, el primero a la de arriba. Cruzar otra barra sin vértice no conecta */
+function onWire(g) { return !(GEO.pins && GEO.pins.has(g[0] + ',' + g[1])) && GEO.segs.some(([u, v]) => inside(u, v, g[0], g[1])); }
+function busRoutes(row, at) {
+  const a = row.ax, b = 1 - a, S = row.pts, n = S.length, lo = S[0][a], hi = S[n - 1][a];
+  const lines = [...new Set(GEO.segs.filter(([u, v]) => u[b] === v[b] && u[a] !== v[a] && Math.min(u[a], v[a]) <= lo && Math.max(u[a], v[a]) >= hi).map(([u]) => u[b]))].sort((u, v) => u - v);
+  const i = lines.indexOf(at[b]);
+  if (i < 0 || lines.length < n) return null;
+  const s = Math.min(i, lines.length - n);
+  return S.map((q, k) => { const e = q.slice(); e[b] = lines[s + k]; return [q, e]; });
+}
+/* Un vértice de un cable sobre otro de la misma tanda también los conectaría */
+function routesTouch(R) {
+  return R.some((u, i) => R.some((v, j) => i !== j && norm(u).some(p => norm(v).some((q, k, V) => (p[0] === q[0] && p[1] === q[1]) || (k && inside(V[k - 1], q, p[0], p[1]))))));
+}
+/* Dos puntas en un mismo tramo serían un cortocircuito */
+function sameWire(ends) {
+  const on = (u, v, e) => inside(u, v, e[0], e[1]) || (e[0] === u[0] && e[1] === u[1]) || (e[0] === v[0] && e[1] === v[1]);
+  return GEO.segs.some(([u, v]) => ends.filter(e => on(u, v, e)).length > 1);
+}
+function mwStart(p) {
+  const bus = onWire(p);
+  const r = (!bus && rowAt(p, wireN)) || {pts: Array.from({length: wireN}, (_, i) => [p[0] + 2 * i, p[1]]), ax: 0, j: 0, out: 1, bus: bus ? p : null};
+  wireDraft = {pts: [p], multi: r}; hover = p;
+  drag = {mode: 'wire', start: p, moved: false, multi: true};
+  draw();
+}
+function multiRoutes(m, end) {
+  if (m.bus) {
+    if (end[0] === m.bus[0] && end[1] === m.bus[1]) return [];
+    const R = rowAt(end, m.pts.length), row = R || {pts: m.pts.map((_, i) => [end[0] + 2 * i, end[1]]), ax: 0};
+    const r = busRoutes(row, m.bus);
+    if (r) return r;
+    const q = []; q.short = true; return q;
+  }
+  if (onWire(end)) { const r = busRoutes(m, end); if (r) return r; }
+  const routes = multiPlain(m, end);
+  if (routes.length && (sameWire(routes.map(p => p[p.length - 1])) || routesTouch(routes))) { const q = []; q.short = true; return q; }
+  return routes;
+}
+function multiPlain(m, end) {
+  const n = m.pts.length, S = m.pts, a = m.ax, b = 1 - a, key = end[0] + ',' + end[1];
+  let R = (GEO.pins && GEO.pins.has(key)) || connectable(end) ? rowAt(end, n) : null;
+  if (R && R.pts.some(q => S.some(s => s[0] === q[0] && s[1] === q[1]))) R = null;
+  if (!R) {
+    const d0 = end[0] - S[m.j][0], d1 = end[1] - S[m.j][1];
+    if (!d0 && !d1) return [];
+    R = {pts: S.map(q => [q[0] + d0, q[1] + d1]), ax: a};
+  }
+  const P = (r, q) => a === 0 ? [r, q] : [q, r];
+  if (R.ax !== a) {
+    /* filas en cruz: un codo por cable, el de fuera con el de fuera */
+    const E = R.pts.slice(), dA = Math.sign(E[0][a] - S[0][a]) || 1, dB = Math.sign(E[0][b] - S[0][b]) || 1;
+    if (dA * dB > 0) E.reverse();
+    return S.map((q, i) => [q, P(q[a], E[i][b]), E[i]]);
+  }
+  const sb = S[0][b], eb = R.pts[0][b], d = eb - sb, shift = R.pts[0][a] - S[0][a];
+  if (!shift && d) return S.map((q, i) => [q, R.pts[i]]);
+  /* Z escalonada: gira primero el cable que va por delante del desplazamiento */
+  const room = Math.abs(d), s = Math.sign(d) || 1;
+  const first = sb + s * Math.floor((room - (n - 1)) / 2);
+  const out = m.out || 1, base = out > 0 ? Math.max(sb, eb) : Math.min(sb, eb);
+  const lev = k => room >= n + 1 ? first + s * k : base + out * (1 + k);
+  return S.map((q, i) => { const L = lev(shift > 0 ? n - 1 - i : i), e = R.pts[i]; return [q, P(q[a], L), P(e[a], L), e]; });
+}
+function mwEnd(end, at) {
+  if (!wireDraft || !wireDraft.multi) return;
+  const raw = multiRoutes(wireDraft.multi, end), routes = raw.map(norm).filter(p => p.length > 1);
+  if (raw.short) { toast('Esos cables caerían en el mismo conductor y harían un cortocircuito. Suéltelos en otra fila', 'err'); draw(); return; }
+  wireDraft = null; hover = null;
+  if (!routes.length) { draw(); return; }
+  snap();
+  const ws = routes.map(pts => { const w = {id: nid('w'), pts}; if (wstyle.c !== 'auto') w.c = wstyle.c; if (wstyle.t === 'g' || routes.length >= 3) w.t = 'g'; doc.wires.push(w); return w; });
+  changed();
+  const air = routes.some(pts => pts.some(q => doc.comps.some(c => T[c.type].air && wpins(c).some(p => p[0] === q[0] && p[1] === q[1]))));
+  if (wstyle.ask && at && !air) askColorMulti(ws, at);
+}
+const SEQ = {2: ['marron', 'azul'], 3: ['marron', 'negro', 'gris'], 4: ['marron', 'negro', 'gris', 'azul'], 5: ['marron', 'negro', 'gris', 'azul', 'pe']};
+const SEQN = {2: 'L · N', 3: 'L1 · L2 · L3', 4: 'L1 · L2 · L3 · N', 5: 'L1 · L2 · L3 · N · PE'};
+function askColorMulti(ws, at) {
+  const n = ws.length, seq = SEQ[n];
+  const dots = seq.map(k => `<i class="dot" style="background:${chipBg(k)};box-shadow:0 0 0 1px rgba(255,255,255,.4)"></i>`).join('');
+  menuEl.innerHTML = `<h5>¿Qué conductores son estos ${n} cables?</h5><div class="cpk"><button class="mi" data-askm="seq"><span style="display:flex;gap:10px;align-items:center"><span style="display:flex;gap:3px">${dots}</span><span><b>${SEQN[n]}</b><small>De izquierda a derecha, con el código de colores</small></span></span></button><button class="mi" data-askm="auto"><span style="display:flex;gap:10px;align-items:center"><i class="dot" style="background:${chipBg('auto')}"></i><span><b>Sin color</b><small>Negro de plano</small></span></span></button></div>
+    <h5>Todos del mismo color</h5><div class="swg" style="padding-top:2px">${Object.keys(WC).filter(k => k !== 'auto').map(k => `<button class="chip" data-askm="${k}" title="${hx(WC[k].n)}" aria-label="${hx(WC[k].n)}"><i style="background:${chipBg(k)}"></i></button>`).join('')}</div>
+    <label class="chk" style="margin:4px 10px 8px"><input type="checkbox" id="ask-off"> No volver a preguntar</label>`;
+  menuFor = null; menuEl.dataset.wires = ws.map(w => w.id).join(',');
+  menuEl.style.minWidth = '280px'; menuEl.hidden = false;
+  const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
+  menuEl.style.left = clamp(at[0] + 14, 8, innerWidth - mw - 8) + 'px'; menuEl.style.top = clamp(at[1] - 20, 8, innerHeight - mh - 8) + 'px';
+}
 function askColor(w, at) {
   const html = `<h5>¿Qué conductor es este cable?</h5><div class="cpk">${CODE.map(([k, a, b]) => `<button class="mi" data-ask="${k}"><span style="display:flex;gap:10px;align-items:center"><i class="dot" style="background:${chipBg(k)}"></i><span><b>${a}</b><small>${b}</small></span></span></button>`).join('')}</div>
     <div class="swg" style="padding-top:2px">${['naranja', 'violeta', 'azulclaro'].map(k => `<button class="chip" data-ask="${k}" title="${hx(WC[k].n)}" aria-label="${hx(WC[k].n)}"><i style="background:${chipBg(k)}"></i></button>`).join('')}</div>
@@ -2864,7 +2992,7 @@ function updateBtns() {
   $('#b-redo').disabled = sim.on || !redoS.length;
   $('#b-del').disabled = sim.on || !selection.size;
   $('#b-rot').disabled = sim.on || !(selection.size || tool === 'place');
-  $('#t-select').disabled = $('#t-wire').disabled = $('#b-wst').disabled = sim.on;
+  $('#t-select').disabled = $('#t-wire').disabled = $('#t-wire3').disabled = $('#b-wst').disabled = sim.on;
   const i = $('#wst-i'); i.style.background = chipBg(wstyle.c); i.style.boxShadow = `0 0 0 ${wstyle.t === 'g' ? 3 : 1}px var(--faint)`;
 }
 function updateRun() { $('#run-t').textContent = sim.on ? 'Detener' : 'Simular'; updateBtns(); plcLast = ''; plcSync(); renderSheets(); }
@@ -2898,6 +3026,12 @@ sv.addEventListener('pointerdown', e => {
   if (tool === 'wire') {
     /* En un borne o en otro cable se conecta; arrastrando en vacío se mueve por el plano, y un clic sin mover dobla el cable */
     const on = pinAt(w) || (connectable(g) ? g : null);
+    if (wireN > 1) {
+      const pan = fn => { drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, click: fn}; };
+      if (!wireDraft) { if (on) mwStart(on); else pan(() => mwStart(g)); return; }
+      if (on) { mwEnd(on, [e.clientX, e.clientY]); return; }
+      pan(ev => mwEnd(g, [ev.clientX, ev.clientY])); return;
+    }
     if (on) { wireClick(on, e); return; }
     drag = {mode: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, click: ev => wireClick(g, ev)}; return;
   }
@@ -2975,6 +3109,7 @@ function endPointer(e) {
   if (!drag) return;
   const d = drag; drag = null;
   if (d.mode === 'wire') {
+    if (d.multi) { if (d.moved && wireDraft) { const w = toWorld(e); mwEnd(pinAt(w) || snapG(w), [e.clientX, e.clientY]); } return; }
     if (d.moved && wireDraft) {
       const w = toWorld(e), end = pinAt(w) || snapG(w);
       wireDraft.pts.push(...routeTo(wireDraft.pts[wireDraft.pts.length - 1], end));
@@ -3039,7 +3174,8 @@ window.addEventListener('keydown', e => {
   if (mod || e.altKey) return;
   switch (k) {
     case 'v': setTool('select'); break;
-    case 'w': case 'c': setTool('wire'); break;
+    case 'w': case 'c': setWireN(1); break;
+    case '1': case '2': case '3': case '4': case '5': setWireN(+k); break;
     case 't': setTool('text'); break;
     case 'b': setTool('box'); break;
     case 'r': rotateSel(); break;
@@ -3375,6 +3511,7 @@ $('#insp-tog').addEventListener('click', () => $('#insp').classList.toggle('open
 
 function hint() {
   $('#hint').textContent = sim.on ? 'Mantenga pulsados los pulsadores · Mayús+clic los enclava · clic en interruptores, sensores, protecciones y relés térmicos'
+    : tool === 'wire' && wireN > 1 ? wireN + ' cables a la vez: pinche en una fila de bornes y arrastre hasta la otra · teclas 2 a 5 cambian el número · 1 o W vuelve a un cable · Esc para terminar'
     : tool === 'wire' ? 'Clic en un borne para empezar · cada clic dobla el cable · arrastre en vacío o botón derecho para moverse por el plano · Esc para terminar'
     : tool === 'text' ? 'Clic en la hoja para escribir · Intro para otra línea · Esc o clic fuera para terminar'
     : tool === 'place' ? 'Clic en la hoja para colocar · R gira · Mayús+clic coloca varios · Esc cancela'
@@ -3635,7 +3772,7 @@ function openMenu(btn, html, minW) {
   menuEl.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px'; menuEl.style.top = (r.bottom + 6) + 'px';
   menuEl.hidden = false;
 }
-function closeMenu() { const was = !menuEl.hidden && plcEl._sel; menuEl.hidden = true; menuFor = null; delete menuEl.dataset.wire; if (was) { plcEl._sel = null; plcEl.querySelectorAll('.k.on').forEach(x => x.classList.remove('on')); plcLast = ''; } }
+function closeMenu() { const was = !menuEl.hidden && plcEl._sel; menuEl.hidden = true; menuFor = null; delete menuEl.dataset.wire; delete menuEl.dataset.wires; if (was) { plcEl._sel = null; plcEl.querySelectorAll('.k.on').forEach(x => x.classList.remove('on')); plcLast = ''; } }
 const mi = (act, title, sub, key) => `<button class="mi" data-act="${act}"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span>${key ? `<kbd>${key}</kbd>` : ''}</button>`;
 $('#b-file').addEventListener('click', () => openHome('inicio'));
 $('#b-help').addEventListener('click', () => openHome('ayuda'));
@@ -3656,6 +3793,12 @@ menuEl.addEventListener('change', e => {
 });
 menuEl.addEventListener('click', e => {
   const pl = e.target.closest('[data-pl]'); if (pl) { plcMenuAct(pl.dataset.pl); return; }
+  const askm = e.target.closest('[data-askm]');
+  if (askm) {
+    const ids = (menuEl.dataset.wires || '').split(','), k = askm.dataset.askm, ws = ids.map(id => doc.wires.find(x => x.id === id)).filter(Boolean);
+    ws.forEach((w, i) => { const c = k === 'seq' ? (SEQ[ws.length] || [])[i] : k; if (!c || c === 'auto') delete w.c; else w.c = c; });
+    changed(); closeMenu(); return;
+  }
   const ask = e.target.closest('[data-ask]');
   if (ask) {
     const w = doc.wires.find(x => x.id === menuEl.dataset.wire), k = ask.dataset.ask;
@@ -4203,7 +4346,8 @@ let toastT = 0;
 function toast(m, k) { const el = $('#toast'); el.textContent = m; el.className = 'toast' + (k ? ' ' + k : ''); el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 3400); }
 
 /* ---------- botones de la barra ---------- */
-document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => { if (b.dataset.tool === 'wire') wireN = 1; setTool(b.dataset.tool); }));
+$('#t-wire3').addEventListener('click', () => setWireN(tool === 'wire' && wireN > 1 ? (wireN >= 5 ? 2 : wireN + 1) : wireLast));
 $('#b-rot').addEventListener('click', rotateSel);
 $('#b-del').addEventListener('click', delSel);
 $('#b-undo').addEventListener('click', doUndo);
@@ -4532,6 +4676,7 @@ function renderHome() {
       <h4>Cómo se usa</h4><ol class="steps">
         <li>Busque un componente con Ctrl+K por su nombre o por lo que hace («luz», «paro», «bomba») o arrástrelo desde el cajón de la izquierda.</li>
         <li>Para cablear, pinche en un borne, arrastre y suelte en otro borne. El cable queda puesto y le pregunta qué conductor es.</li>
+        <li>Para la potencia, el botón «3 cables» (o las teclas 2 a 5) tira varios a la vez: pinche en una fila de bornes y suelte en la otra.</li>
         <li>Ponga a los contactos la misma marca que su bobina: un contacto KM1 sigue a la bobina KM1.</li>
         <li>Pulse Simular y accione los pulsadores con el ratón. Si un cable tiene un color que no le toca, sale marcado en rojo.</li></ol>
       <h4>Varias hojas</h4><ol class="steps">
@@ -4544,7 +4689,7 @@ function renderHome() {
         <li>Doble clic sobre el PLC (o «Editar programa») abre el programa en contactos: columnas en serie (Y) con contactos en paralelo (O) y una salida por segmento: bobina, Set, Reset, temporizadores TON y TOF y contador.</li>
         <li>Al simular, el programa se pinta en verde por donde pasa la corriente. Un pulsador NC cableado a una entrada pone esa entrada a 1 en reposo: en el programa se usa como NA.</li></ol>
       <h4>Código de colores</h4><div class="leg"><div><i style="background:var(--l1)"></i>Fases L1, L2, L3 · marrón, negro y gris</div><div><i style="background:var(--n)"></i>Neutro · azul</div><div><i style="background:repeating-linear-gradient(90deg,var(--pe) 0 8px,#E9C81C 8px 13px)"></i>Protección (tierra) · verde-amarillo, solo para ella</div><div><i style="background:#D0342C"></i>Mando · rojo (habitual en cuadros)</div></div>
-      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / B / W / T</kbd><span>Mover / selección / cable / texto</span><kbd>Arrastrar en vacío</kbd><span>Moverse por el plano (también con el botón derecho)</span><kbd>B o Mayús + arrastrar</kbd><span>Marcar varios con un recuadro</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
+      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / B / W / T</kbd><span>Mover / selección / cable / texto</span><kbd>2 a 5</kbd><span>Tirar ese número de cables a la vez</span><kbd>Arrastrar en vacío</kbd><span>Moverse por el plano (también con el botón derecho)</span><kbd>B o Mayús + arrastrar</kbd><span>Marcar varios con un recuadro</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
   }
   else h += `<h1>Abrir</h1><div class="drop" id="h-drop"><span>Arrastre aquí un archivo .json del programa, o</span><button class="btn" data-hact="import">Importar archivo…</button></div>
     <div class="hstore"><span class="sst" data-sst></span>${Store.col ? '' : WEB ? (FB ? '<button class="btn sm" data-hs="cuenta">Inicia sesión para tenerlos en cualquier ordenador</button>' : '') : '<button class="btn sm" data-hact="cloud">Guardar también en mi cuenta de Claude</button>'}</div>
