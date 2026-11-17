@@ -82,6 +82,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 .wsw{width:34px;padding:0;justify-content:center}
 .wsw i{width:18px;height:18px;border-radius:50%;display:block;border:2px solid var(--raise)}
 .find{width:210px;justify-content:space-between;color:var(--muted)}
+.rvb{position:relative}
+.rvb.ok svg{stroke:var(--ok)}
+.bdg{min-width:18px;height:18px;border-radius:9px;padding:0 5px;font:700 11px/18px var(--f-ui);text-align:center;background:var(--accent);color:var(--accent-ink)}
+.rvb.bad .bdg{background:var(--err);color:#fff}
+.menu button.mi.rv{align-items:flex-start;justify-content:flex-start;gap:10px;text-align:left}
+.menu .rv::before{content:"";width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background:var(--accent)}
+.menu .rv.err::before{background:var(--err)}
+.menu .rv.info::before{background:var(--faint)}
+.menu .rv b{font-weight:500;font-size:13px;line-height:1.35}
+.rvok,.rvnote{margin:4px 11px 8px;font-size:12.5px;color:var(--muted);max-width:340px}
+.rvnote{border-top:1px solid var(--line);padding-top:8px;margin-top:6px}
 .find kbd{font-size:10.5px}
 .sp{flex:1 0 8px}
 .run{height:38px;padding:0 18px 0 12px;border-radius:19px;background:var(--accent);border:1px solid var(--accent-2);color:var(--accent-ink);
@@ -113,14 +124,25 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* ---- cajón de componentes ---- */
 .pal{grid-area:pal;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:12px 12px 28px;min-height:0}
 .search{width:100%;height:34px;border:1px solid var(--line);border-radius:7px;background:var(--raise);padding:0 10px;margin-bottom:6px}
-.pc h3{margin:14px 2px 6px;font:600 10.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pc h3{margin:10px 0 4px;font:600 10.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pc.rec h3{margin:12px 2px 6px}
+.pch{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:7px;width:100%;padding:7px 4px;border-radius:6px;cursor:pointer;font:inherit;letter-spacing:inherit;color:inherit}
+.pch:hover{background:var(--raise);color:var(--text)}
+.pch:focus-visible{outline:2px solid var(--sel);outline-offset:1px}
+.pch svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s;flex:none}
+.pch span{flex:1}
+.pch em{font-style:normal;font-weight:500;letter-spacing:0;color:var(--faint)}
+.pc.closed .pch svg{transform:rotate(-90deg)}
+.pc.closed .pgrid{display:none}
+#pal-list.searching .pc.closed .pgrid{display:grid}
+#pal-list.searching .pc.rec{display:none}
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
 .it{border:1px solid transparent;background:none;border-radius:8px;padding:7px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:grab;min-width:0;touch-action:none}
 .it:hover{background:var(--raise);border-color:var(--line)}
 .it.on{background:var(--selfill);border-color:var(--sel)}
-.it .ic{width:100%;height:40px;display:flex;align-items:center;justify-content:center;background:var(--sheet);border-radius:5px}
-.it .ic svg{width:78%;height:34px}
-.it .nm{font-size:11.5px;line-height:1.2;text-align:center;color:var(--text)}
+.it .ic{width:100%;height:36px;display:flex;align-items:center;justify-content:center;background:var(--sheet);border-radius:5px}
+.it .ic svg{width:80%;height:30px}
+.it .nm{font-size:10.5px;line-height:1.15;text-align:center;color:var(--text);overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto}
 .live .pal{opacity:.4;pointer-events:none}
 
 /* ---- pestañas + hoja ---- */
@@ -201,7 +223,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .st.ok{fill:var(--ok)!important} .st.err{fill:var(--err)!important} .st.warn{fill:var(--warn)!important}
 .cp.ghost{opacity:.5;pointer-events:none}
 .live .cp.ia .hit{cursor:pointer}
-.wire{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+/* El trazo visible no recoge el ratón: lo hace .whit, más ancho y debajo. Si el trazo lo recogía, pinchar
+   justo encima del cable no lo seleccionaba (el trazo no lleva data-id) y se movía el plano en su lugar. */
+.wire{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}
 .wire.thick{stroke-width:3.4}
 .wire.peo{stroke:#E9C81C;stroke-dasharray:9 9}
 .whit{fill:none;stroke:transparent;stroke-width:12}
@@ -229,6 +253,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .legend i{width:16px;height:4px;border-radius:2px;display:block}
 .banner{position:absolute;left:50%;top:48px;transform:translateX(-50%);max-width:min(560px,calc(100% - 24px));background:var(--stop);color:#fff;border-radius:9px;padding:9px 14px;font-weight:600;font-size:13px;box-shadow:var(--shadow);text-align:center}
 .banner.warn{background:#8A5200}
+.hint.fade{opacity:0;transition:opacity .6s}
 .hint{position:absolute;left:12px;bottom:12px;max-width:calc(100% - 260px);font-size:12px;color:#33413D;background:rgba(255,255,255,.78);border:1px solid rgba(26,39,36,.12);border-radius:8px;padding:6px 10px;pointer-events:none}
 .zoom{position:absolute;right:12px;bottom:12px;display:flex;align-items:center;gap:2px;background:var(--raise);border:1px solid var(--line);border-radius:9px;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .zoom button{height:28px;min-width:28px;border:0;background:none;border-radius:6px;cursor:pointer;font-weight:600;padding:0 8px}
@@ -444,9 +469,12 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
 .wbad{fill:none;stroke:#E3382B;stroke-width:12;opacity:.28;stroke-linecap:round;stroke-linejoin:round}
 .cpk{display:grid;gap:1px;padding:0 2px}
 .cpk .mi{padding:6px 10px}
+.cpk .mi.sug{background:var(--selfill);box-shadow:inset 0 0 0 1px var(--sel)}
+.cpk .mi em{font-style:normal;font:600 9.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sel);margin-left:6px}
 .dot{width:22px;height:22px;border-radius:50%;display:block;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
 /* El panel de la derecha solo aparece con algo seleccionado o al simular */
-.app.noinsp{grid-template-columns:232px minmax(0,1fr) 0}
+/* solo en escritorio: en el móvil esta regla pisaba la maqueta de una columna y dejaba la hoja en 140 px */
+@media (min-width:901px){.app.noinsp{grid-template-columns:232px minmax(0,1fr) 0}}
 .app.noinsp .insp{display:none}
 /* Archivo, como en Word: tarjetas de exportar y formulario de propiedades */
 .xcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:18px}
@@ -477,6 +505,16 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
 .who small{color:var(--muted)}
 .hnav.sep{margin-top:10px}
 
+/* Barra de herramientas en pantallas de portátil: a 1280 px no cabía y Simular quedaba fuera de la pantalla.
+   Se recorta por orden de importancia: primero el subtítulo y el nombre (el logo se queda), luego el atajo
+   del buscador y por último los rótulos de las herramientas (el icono y el título emergente siguen ahí).
+   Simular va pegado al borde derecho como red de seguridad: nunca puede quedar escondido. */
+.run{position:sticky;right:0}
+@media (max-width:1560px) and (min-width:901px){.brand span{display:none}}
+@media (max-width:1500px) and (min-width:901px){.rvb .lbl{display:none}.brand div{display:none}.find{width:180px}.find kbd{display:none}}
+@media (max-width:1400px) and (min-width:901px){.bar{gap:6px;padding-inline:12px}.grp{padding-left:7px}.find{width:150px}}
+@media (max-width:1240px) and (min-width:901px){.bar [data-tool] .lbl,#t-wire3 .lbl,#b-file .lbl{display:none}.bar [data-tool],#t-wire3,#b-file{padding:0 9px}.find{width:44px;padding:0;justify-content:center}.find .lbl{display:none}}
+
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:52px minmax(0,1fr) 96px;grid-template-areas:"bar" "stage" "pal"}
   .bar{padding-inline:12px;gap:8px}
@@ -492,7 +530,8 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
   .pal{border-right:0;border-top:1px solid var(--line);padding:8px max(12px,env(safe-area-inset-left,0px)) 8px;overflow-x:auto;overflow-y:hidden;display:flex;gap:4px}
   #pal-list{display:contents}
   .search,.pc h3{display:none}
-  .pc,.pgrid{display:contents}
+  .pc,.pgrid,.pc.closed .pgrid,#pal-rec{display:contents}
+  .pc.rec{display:none}
   .it{flex:0 0 84px}
   .insp{position:fixed;left:8px;right:8px;bottom:calc(104px + env(safe-area-inset-bottom,0px));max-height:44px;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:30;transition:max-height .22s ease;overflow:hidden;display:flex;flex-direction:column}
   .insp.open{max-height:46vh}
@@ -546,11 +585,12 @@ kbd{font:500 11px var(--f-mono);border:1px solid var(--line);border-bottom-width
     </div>
     <div class="sp"></div>
     <button class="btn ubtn out" id="b-user" hidden title="Tu cuenta"><span class="av">?</span><span class="lbl">Entrar</span></button>
+    <button class="btn rvb" id="b-chk" title="Revisar el plano: bornes al aire, contactos sin bobina, cortocircuitos y colores de cable"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span class="lbl">Revisar</span><b class="bdg" id="chk-n" hidden></b></button>
     <button class="btn ib" id="b-help" title="Ayuda y atajos" aria-label="Ayuda y atajos"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5V14"/><path d="M12 17.2v.3"/></svg></button>
     <button class="run" id="b-run" title="Simular (S)"><i></i><span id="run-t">Simular</span></button>
   </header>
 
-  <aside class="pal" id="pal" aria-label="Componentes">
+  <aside class="pal" id="pal" aria-label="Componentes" lang="es">
     <input class="search" id="q" type="search" placeholder="Buscar: luz, botón, motor…" autocomplete="off" aria-label="Filtrar componentes">
     <div id="pal-list"></div>
   </aside>
@@ -1798,8 +1838,109 @@ function numberNets() {
   return roots.length;
 }
 
+/* ---------- revisión del plano ----------
+   Lo que más tiempo hace perder en prácticas es un circuito que «no hace nada» al simular. Casi siempre es un
+   borne al aire, un contacto con una marca que no tiene bobina, una bobina que no mueve nada o dos fases unidas
+   por un cable. Todo eso se ve sin simular: se revisa solo mientras se dibuja, el número sale en el botón
+   Revisar y un clic en cada aviso lleva hasta el sitio. Solo se mira el dibujo; no se adivina cómo funcionaría. */
+let rvList = [], rvT = 0;
+function review() {
+  const out = [], comps = allComps();
+  const add = (lvl, msg, si, ref) => out.push({lvl, msg, si, ref});
+  const nm = c => (c.tag ? c.tag + ' · ' : '') + T[c.type].short;
+  /* un esquema solo neumático no necesita red eléctrica, pero sí aire; y al revés */
+  const elec = comps.some(c => !T[c.type].air && c.type !== 'text' && T[c.type].kind !== 'src'), air = comps.some(c => T[c.type].air && T[c.type].kind !== 'airsrc');
+  if (elec && !comps.some(c => T[c.type].kind === 'src')) add('err', 'No hay ninguna alimentación: ponga una red o una fuente para que algo funcione al simular.', book.cur, null);
+  if (air && !comps.some(c => T[c.type].kind === 'airsrc')) add('err', 'No hay ninguna toma de aire comprimido: sin ella no se moverá ningún cilindro.', book.cur, null);
+  book.sheets.forEach((sh, si) => {
+    const cnt = new Map(), inc = (k, n) => cnt.set(k, (cnt.get(k) || 0) + n), segs = [];
+    for (const w of sh.wires) w.pts.forEach((q, i) => { inc(q + '', i === 0 || i === w.pts.length - 1 ? 1 : 2); if (i) segs.push([w.pts[i - 1], q]); });
+    const pinK = new Set();
+    for (const c of sh.comps) for (const q of wpins(c)) { pinK.add(q + ''); inc(q + '', 1); }
+    for (const k of [...cnt.keys()]) { const [x, y] = k.split(',').map(Number); for (const [a, b] of segs) if (inside(a, b, x, y)) inc(k, 2); }
+    for (const c of sh.comps) {
+      const t = T[c.type]; if (c.type === 'text' || t.kind === 'src') continue;
+      const ps = wpins(c), free = ps.filter(q => cnt.get(q + '') === 1).length;
+      if (!free) continue;
+      if (free === ps.length) add('warn', nm(c) + ': no está conectado a nada.', si, {c: c.id});
+      else if (ps.length === 2) add('err', nm(c) + ': tiene un borne al aire, así que no forma circuito.', si, {c: c.id});
+    }
+    for (const w of sh.wires) {
+      const loose = [w.pts[0], w.pts[w.pts.length - 1]].filter(e => cnt.get(e + '') === 1 && !pinK.has(e + ''));
+      if (loose.length) add('warn', loose.length === 2 ? 'Cable que no llega a ningún sitio por ninguno de sus extremos.' : 'Cable con un extremo suelto: no llega a ningún borne ni a otro cable.', si, {w: w.id});
+    }
+    /* nudos unidos solo por cables (sin atravesar aparatos): cortocircuitos directos y colores que no tocan */
+    const keys = new Map(), pts = [], pot = [];
+    const ix = (x, y) => { const k = x + ',' + y; let i = keys.get(k); if (i === undefined) { i = pts.length; keys.set(k, i); pts.push([x, y]); } return i; };
+    for (const c of sh.comps) { const t = T[c.type]; if (t.kind === 'src' && t.pot) wpins(c).forEach((p, j) => { const i = ix(p[0], p[1]); (pot[i] = pot[i] || new Set()).add(t.pot[j]); }); }
+    const wk = sh.wires.map(o => o.pts.map(p => ix(p[0], p[1])));
+    const par = pts.map((_, i) => i), find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+    sh.wires.forEach((o, n) => { const K = wk[n]; for (let j = 1; j < K.length; j++) { const a = K[j - 1], b = K[j]; par[find(a)] = find(b); for (let k = 0; k < pts.length; k++) if (inside(pts[a], pts[b], pts[k][0], pts[k][1])) par[find(k)] = find(a); } });
+    const net = new Map();
+    pot.forEach((S, i) => { if (!S) return; const r = find(i); if (!net.has(r)) net.set(r, new Set()); S.forEach(v => net.get(r).add(v)); });
+    const shorted = new Set();
+    for (const [r, S] of net) {
+      const ks = new Set([...S].map(v => SRC[v].k));
+      if (ks.size > 1) { shorted.add(r); const w = sh.wires.find((o, n) => find(wk[n][0]) === r); add('err', 'Cortocircuito: ' + [...S].map(v => SRC[v].nm).join(' y ') + ' quedan unidos directamente por cables.', si, w ? {w: w.id} : null); }
+    }
+    sh.wires.forEach((w, n) => {
+      if (!w.c || w.c === 'auto') return;
+      const r = find(wk[n][0]), S = net.get(r); if (!S || shorted.has(r) || S.size !== 1) return;
+      const v = [...S][0], why = colorWrong(w.c, 'w-' + SRC[v].cls);
+      if (why) add('warn', 'Cable ' + WC[w.c].n.toLowerCase() + ' en ' + (NETNAME[SRC[v].cls] || SRC[v].nm) + ': ' + why + '.', si, {w: w.id});
+    });
+  });
+  /* marcas: contactos sin bobina, bobinas repetidas, bobinas que no mueven nada, electroválvulas que faltan */
+  const seen = new Map();
+  for (const c of comps) {
+    const t = T[c.type];
+    if (t.follows && !driverOf(c)) add('err', (c.tag || '—') + ' · ' + t.short + ': no hay ' + (t.follows === 'thermal' ? 'ningún relé térmico' : t.follows === 'timer' ? 'ningún temporizador' : 'ninguna bobina') + ' con esa marca, así que nunca cambiará.', sheetOf(c), {c: c.id});
+    if (t.driver && c.tag) {
+      const key = t.driver + ':' + c.tag;
+      if (seen.has(key)) add('err', 'Hay dos ' + (t.driver === 'thermal' ? 'relés térmicos' : 'bobinas') + ' con la marca ' + c.tag + ': sus contactos no sabrían a cuál seguir.', sheetOf(c), {c: c.id}); else seen.set(key, c);
+    }
+    if (['coil', 'coilka', 'ton', 'toff', 'tele'].includes(c.type) && c.tag && !followersOf(c).length && !comps.some(v => v.p && (v.p.t14 === c.tag || v.p.t12 === c.tag)))
+      add('info', nm(c) + ': la bobina no mueve ningún contacto. Si debe moverlos, póngales la marca ' + c.tag + '.', sheetOf(c), {c: c.id});
+    if (t.kind === 'valve') for (const sd of [14, 12]) {
+      const tg = c.p['t' + sd];
+      if (c.p['a' + sd] === 'sol' && tg && !comps.some(d => d.type === 'yv' && d.tag === tg)) add('warn', nm(c) + ': el solenoide del lado ' + sd + ' es ' + tg + ', pero no hay ninguna electroválvula ' + tg + ' en el esquema de mando.', sheetOf(c), {c: c.id});
+    }
+  }
+  const ord = {err: 0, warn: 1, info: 2};
+  return out.sort((a, b) => ord[a.lvl] - ord[b.lvl]).slice(0, 60);
+}
+function rvBadge() {
+  rvList = review();
+  const el = $('#chk-n'), btn = $('#b-chk'), e = rvList.filter(x => x.lvl === 'err').length, n = rvList.filter(x => x.lvl !== 'info').length;
+  el.hidden = !n; el.textContent = n;
+  btn.classList.toggle('bad', !!e); btn.classList.toggle('warn', !e && !!n); btn.classList.toggle('ok', !n && !!allComps().length);
+}
+function rvSoon() { clearTimeout(rvT); rvT = setTimeout(rvBadge, 450); }
+function rvHTML() {
+  if (!allComps().length) return '<h5>Revisión del plano</h5><p class="rvok">El plano está vacío.</p>';
+  if (!rvList.length) return '<h5>Revisión del plano</h5><p class="rvok">Todo en orden: no hay bornes al aire, contactos sin bobina, cortocircuitos directos ni colores cambiados.</p>';
+  const e = rvList.filter(x => x.lvl === 'err').length, w = rvList.filter(x => x.lvl === 'warn').length, nI = rvList.length - e - w;
+  if (!e && !w) return '<h5>Revisión del plano</h5><p class="rvok">Nada que impida simular.' + (nI ? ' Solo ' + (nI === 1 ? 'una nota' : nI + ' notas') + ':' : '') + '</p>' + rvList.map((x, i) => '<button class="mi rv info" data-rv="' + i + '"><span><b>' + hx(x.msg) + '</b></span></button>').join('');
+  return '<h5>Revisión del plano · ' + (e ? e + (e === 1 ? ' error' : ' errores') : '') + (e && w ? ' y ' : '') + (w ? w + (w === 1 ? ' aviso' : ' avisos') : '') + '</h5>' +
+    rvList.map((x, i) => '<button class="mi rv ' + x.lvl + '" data-rv="' + i + '"><span><b>' + hx(x.msg) + '</b>' + (book.sheets.length > 1 ? '<small>' + hx(book.sheets[x.si].name) + '</small>' : '') + '</span></button>').join('') +
+    '<p class="rvnote">Clic en un aviso para ir hasta él. Solo se revisa el dibujo: la simulación dirá el resto.</p>';
+}
+function rvGo(i) {
+  const x = rvList[i]; if (!x) return;
+  closeMenu();
+  if (x.si !== book.cur) switchSheet(x.si);
+  if (!x.ref) return;
+  if (x.ref.c) { const c = doc.comps.find(o => o.id === x.ref.c); if (!c) return; if (!sim.on) { selection = new Set([c.id]); inspector(); updateBtns(); } centerOn(c); return; }
+  const w = doc.wires.find(o => o.id === x.ref.w); if (!w) return;
+  if (!sim.on) { selection = new Set([w.id]); inspector(); updateBtns(); }
+  const xs = w.pts.map(p => p[0] * G), ys = w.pts.map(p => p[1] * G), b = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  const r = sv.getBoundingClientRect(); view.k = Math.max(view.k, 1);
+  view.x = r.width / 2 - (b[0] + b[2]) / 2 * view.k; view.y = r.height / 2 - (b[1] + b[3]) / 2 * view.k; applyView();
+  flash = b; draw(); setTimeout(() => { flash = null; draw(); }, 1400);
+}
+
 /* ---------- simulación ---------- */
-const sim = {on: false, voltView: true};
+const sim = {on: false, voltView: true, speed: 1};
 let S0 = null;
 
 function compile() {
@@ -2404,7 +2545,7 @@ function simStart() {
   if (!allComps().length) { toast('Coloque algún componente antes de simular'); return; }
   wireDraft = null; placing = null; drag = null; setTool('select', true);
   compile();
-  Object.assign(sim, {on: true, t: 0, pressed: new Set(), latched: new Set(), toggled: new Set(), tripped: new Set(), coilOn: new Set(), trOn: new Set(),
+  Object.assign(sim, {on: true, t: 0, speed: 1, pressed: new Set(), latched: new Set(), toggled: new Set(), tripped: new Set(), coilOn: new Set(), trOn: new Set(),
     timers: {}, cs: {}, ld: {}, log: [], err: null, osc: false, hold: null, A: null, R: null, leakWarned: false,
     sel: {}, teleSt: {}, teleWas: {}, badWarned: new Set(), plc: {}, dim: {}, valv: {}, vfd: {}, soft: {}, dio: {}, ssr: {}, brg: {}, coilDC: {}, fbWarn: new Set(), Rdc: null, airP: null, airF: null, voltView: !allWires().some(w => w.c && w.c !== 'auto')});
   for (const c of allComps()) {
@@ -2419,6 +2560,7 @@ function simStart() {
   for (const D of S0.dio) sim.dio[D.c.id] = {on: false, ce: false, burnt: false, half: false, i: 0, ic: 0};
   GEO = geo();
   log('Simulación iniciada');
+  rvList = review(); { const ne = rvList.filter(x => x.lvl === 'err').length; if (ne) { log(ne + (ne === 1 ? ' error' : ' errores') + ' en el plano: pulse Revisar para verlos', 'err'); setTimeout(() => toast('El plano tiene ' + ne + (ne === 1 ? ' error que puede' : ' errores que pueden') + ' hacer que no funcione: pulse Revisar'), 50); } rvBadge(); }
   step(0); step(0);
   app.classList.add('live');
   $('#legend').hidden = false;
@@ -2441,7 +2583,11 @@ function loop() {
   if (!sim.on) return;
   const now = performance.now(), dt = clamp((now - lastT) / 1000, 0, 0.1);
   lastT = now;
-  step(dt); draw();
+  /* ×2, ×5, ×10: se dan varios pasos por fotograma (no pasos más largos, que estropearían arranques y rampas);
+     en pausa el tiempo no corre pero los mandos siguen respondiendo */
+  const sp = sim.speed === undefined ? 1 : sim.speed;
+  if (!sp) step(0); else for (let i = 0; i < sp; i++) step(dt);
+  draw();
   if (now - lastInsp > 160) { lastInsp = now; liveInsp(); }
   schedule();
 }
@@ -2739,7 +2885,7 @@ function placeAt(g, keep) {
   if (t.air && t.kind === 'mech') { const n = +((/(\d+)$/.exec(c.tag) || [0, 1])[1]); c.p.fc0 = 'FC' + (2 * n - 1); c.p.fc1 = 'FC' + 2 * n; }
   if (c.type === 'plc') c.p.prog = plcDefault();
   if (c.type === 'borne') c.p.n = doc.comps.filter(d => d.type === 'borne' && d.tag === c.tag).reduce((m, d) => Math.max(m, +d.p.n || 0), 0) + 1;
-  doc.comps.push(c);
+  doc.comps.push(c); palUsed(c.type);
   if (!keep) { selection = new Set([c.id]); setTool('select'); }
   changed();
 }
@@ -2881,8 +3027,25 @@ function askColorMulti(ws, at) {
   const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
   menuEl.style.left = clamp(at[0] + 14, 8, innerWidth - mw - 8) + 'px'; menuEl.style.top = clamp(at[1] - 20, 8, innerHeight - mh - 8) + 'px';
 }
+/* Color sugerido: si el cable queda unido (por cables, sin atravesar aparatos) a un borne de alimentación,
+   ya se sabe qué conductor es. Se sigue preguntando, porque así se aprende el código de colores, pero la
+   respuesta correcta viene marcada: Intro la acepta y las teclas 1 a 7 eligen sin tocar el ratón. */
+const SUGC = {L1: 'marron', L2: 'negro', L3: 'gris', N: 'azul', PE: 'pe'};
+function suggestColor(w) {
+  const keys = new Map(), pts = [], pot = [];
+  const ix = (x, y) => { const k = x + ',' + y; let i = keys.get(k); if (i === undefined) { i = pts.length; keys.set(k, i); pts.push([x, y]); } return i; };
+  for (const c of doc.comps) { const t = T[c.type]; if (t.kind === 'src' && t.pot) wpins(c).forEach((p, j) => { const i = ix(p[0], p[1]); (pot[i] = pot[i] || new Set()).add(t.pot[j]); }); }
+  const wk = doc.wires.map(o => o.pts.map(p => ix(p[0], p[1])));
+  const par = pts.map((_, i) => i), find = i => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+  doc.wires.forEach((o, n) => { const K = wk[n]; for (let j = 1; j < K.length; j++) { const a = K[j - 1], b = K[j]; par[find(a)] = find(b); for (let k = 0; k < pts.length; k++) if (inside(pts[a], pts[b], pts[k][0], pts[k][1])) par[find(k)] = find(a); } });
+  const n = doc.wires.indexOf(w); if (n < 0) return null;
+  const r = find(wk[n][0]), got = new Set();
+  pot.forEach((S, i) => { if (S && find(i) === r) S.forEach(v => got.add(v)); });
+  return got.size === 1 ? SUGC[[...got][0]] || null : null;
+}
 function askColor(w, at) {
-  const html = `<h5>¿Qué conductor es este cable?</h5><div class="cpk">${CODE.map(([k, a, b]) => `<button class="mi" data-ask="${k}"><span style="display:flex;gap:10px;align-items:center"><i class="dot" style="background:${chipBg(k)}"></i><span><b>${a}</b><small>${b}</small></span></span></button>`).join('')}</div>
+  const sug = suggestColor(w);
+  const html = `<h5>¿Qué conductor es este cable?</h5><div class="cpk">${CODE.map(([k, a, b], i) => `<button class="mi${k === sug ? ' sug' : ''}" data-ask="${k}"><span style="display:flex;gap:10px;align-items:center"><i class="dot" style="background:${chipBg(k)}"></i><span><b>${a}${k === sug ? ' <em>sugerido</em>' : ''}</b><small>${b}</small></span></span><kbd>${i + 1}</kbd></button>`).join('')}</div>
     <div class="swg" style="padding-top:2px">${['naranja', 'violeta', 'azulclaro'].map(k => `<button class="chip" data-ask="${k}" title="${hx(WC[k].n)}" aria-label="${hx(WC[k].n)}"><i style="background:${chipBg(k)}"></i></button>`).join('')}</div>
     <label class="chk" style="margin:4px 10px 8px"><input type="checkbox" id="ask-off"> No volver a preguntar</label>`;
   menuEl.innerHTML = html; menuFor = null; menuEl.dataset.wire = w.id;
@@ -2890,6 +3053,7 @@ function askColor(w, at) {
   menuEl.hidden = false;
   const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
   menuEl.style.left = clamp(at[0] + 14, 8, innerWidth - mw - 8) + 'px'; menuEl.style.top = clamp(at[1] - 20, 8, innerHeight - mh - 8) + 'px';
+  const f = menuEl.querySelector('.mi.sug') || menuEl.querySelector('.mi'); if (f) f.focus({preventScroll: true});
 }
 function wireClick(g, e) {
   if (!wireDraft) { wireDraft = {pts: [g]}; hover = g; drag = {mode: 'wire', start: g, moved: false, fromPin: !!pinAt(toWorld(e))}; draw(); return; }
@@ -2911,6 +3075,66 @@ function beginMove(g) {
     if (s || en) rubber.push({w, orig: w.pts.map(p => p.slice()), s, en});
   }
   drag = {mode: 'move', start: g, dx: 0, dy: 0, moved: false, comps: comps.map(c => ({c, x: c.x, y: c.y})), wires: wires.map(w => ({w, orig: w.pts.map(p => p.slice())})), rubber};
+}
+/* ---------- arrastrar un tramo de cable ----------
+   Antes, arrastrar un cable lo movía entero y lo desconectaba de sus bornes: para cambiar el recorrido había
+   que borrarlo y volver a trazarlo. Ahora se arrastra el TRAMO que se pincha, en perpendicular, como en los
+   programas de esquemas modernos. Los extremos se quedan donde están (si el tramo es el primero o el último se
+   añade un codo), y lo que estaba unido a ese tramo le sigue: los cables que llegan en T se alargan y un borne
+   que tocaba el tramo queda unido con un cable corto. */
+function segStart(w, wpt) {
+  const P = w.pts, x = wpt[0] / G, y = wpt[1] / G;
+  if (P.some((p, i) => i && p[0] !== P[i - 1][0] && p[1] !== P[i - 1][1])) return false;
+  let best = 0, bd = Infinity;
+  for (let i = 1; i < P.length; i++) {
+    const a = P[i - 1], b = P[i];
+    const px = clamp(x, Math.min(a[0], b[0]), Math.max(a[0], b[0])), py = clamp(y, Math.min(a[1], b[1]), Math.max(a[1], b[1]));
+    const dd = Math.hypot(x - px, y - py); if (dd < bd) { bd = dd; best = i - 1; }
+  }
+  const A = P[best], Bp = P[best + 1], ax = A[1] === Bp[1] ? 1 : 0;
+  const first = best === 0, last = best === P.length - 2;
+  const on = e => inside(A, Bp, e[0], e[1]) || (e[0] === A[0] && e[1] === A[1]) || (e[0] === Bp[0] && e[1] === Bp[1]);
+  const fixed = e => (first && e[0] === A[0] && e[1] === A[1]) || (last && e[0] === Bp[0] && e[1] === Bp[1]);
+  const moves = e => on(e) && !fixed(e);
+  const others = [];
+  for (const o of doc.wires) {
+    if (o === w) continue;
+    const s = moves(o.pts[0]), en = moves(o.pts[o.pts.length - 1]);
+    if (s || en) others.push({o, orig: o.pts.map(p => p.slice()), s, en});
+  }
+  const ends = new Set(doc.wires.flatMap(o => [o.pts[0], o.pts[o.pts.length - 1]]).map(p => p + ''));
+  const pins = doc.comps.flatMap(c => wpins(c)).filter(p => moves(p) && !ends.has(p + ''));
+  drag = {mode: 'seg', w, i: best, ax, orig: P.map(p => p.slice()), start: snapG(wpt), d: 0, moved: false, others, pins, stubs: []};
+  return true;
+}
+function applySeg(d) {
+  const S = drag, P = S.orig, i = S.i, n = P.length, mv = p => { const q = p.slice(); q[S.ax] += d; return q; };
+  const mid = [];
+  if (i === 0) mid.push(P[0]);
+  mid.push(mv(P[i]), mv(P[i + 1]));
+  if (i === n - 2) mid.push(P[n - 1]);
+  S.w.pts = P.slice(0, i).concat(mid, P.slice(i + 2));
+  for (const x of S.others) {
+    let p = x.orig.map(q => q.slice());
+    if (d) { if (x.s) p.unshift(mv(p[0])); if (x.en) p.push(mv(p[p.length - 1])); }
+    x.o.pts = p;
+  }
+  doc.wires = doc.wires.filter(o => !S.stubs.includes(o)); S.stubs = [];
+  if (d) for (const p of S.pins) { const o = {id: nid('w'), pts: [p.slice(), mv(p)]}; if (S.w.c) o.c = S.w.c; if (S.w.t) o.t = S.w.t; doc.wires.push(o); S.stubs.push(o); }
+}
+function segEnd() {
+  const S = drag;
+  for (const o of [S.w].concat(S.others.map(x => x.o), S.stubs)) o.pts = norm(o.pts);
+  /* un cable en T que ya iba en la dirección del arrastre quedaría con un pico que vuelve sobre sí mismo
+     (2,3 → 2,0 → 2,6): se quita el vértice del pico, que es justo el punto de unión antiguo */
+  const back = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) === 0 && (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]) < 0;
+  for (const x of S.others) {
+    const p = x.o.pts;
+    if (x.s && p.length > 2 && back(p[0], p[1], p[2])) p.splice(1, 1);
+    const n = p.length; if (x.en && n > 2 && back(p[n - 3], p[n - 2], p[n - 1])) p.splice(n - 2, 1);
+    x.o.pts = norm(p);
+  }
+  doc.wires = doc.wires.filter(o => o.pts.length > 1);
 }
 function stretch(p, dx, dy) {
   const a = p[0], b = p[1], na = [a[0] + dx, a[1] + dy], vert = a[0] === b[0];
@@ -2986,7 +3210,7 @@ function paste(atCursor) {
   changed();
   toast(made.length + clip.wires.length > 1 ? 'Pegado: ' + made.length + ' componentes y ' + clip.wires.length + ' cables' : 'Pegado');
 }
-function changed() { markDirty(); draw(); inspector(true); updateBtns(); plcSync(); }
+function changed() { markDirty(); draw(); inspector(true); updateBtns(); plcSync(); rvSoon(); }
 function updateBtns() {
   $('#b-undo').disabled = sim.on || !undoS.length;
   $('#b-redo').disabled = sim.on || !redoS.length;
@@ -3039,6 +3263,9 @@ sv.addEventListener('pointerdown', e => {
   const pg = !e.shiftKey && pinAt(w);
   if (pg) { wireDraft = {pts: [pg]}; hover = pg; drag = {mode: 'wire', start: pg, moved: false, sel: true, hid}; draw(); return; }
   if (hid) {
+    /* un cable solo (o el único elegido): se arrastra el tramo pinchado, no el cable entero */
+    const wsg = hid[0] === 'w' && !e.shiftKey && (!selection.has(hid) || selection.size === 1) && doc.wires.find(x => x.id === hid);
+    if (wsg && segStart(wsg, w)) { selection = new Set([hid]); draw(); inspector(); updateBtns(); return; }
     if (e.shiftKey) { selection.has(hid) ? selection.delete(hid) : selection.add(hid); }
     else if (!selection.has(hid)) selection = new Set([hid]);
     beginMove(g); draw(); inspector(); updateBtns(); return;
@@ -3067,11 +3294,21 @@ sv.addEventListener('pointermove', e => {
     dragAt(w, g); edgeStart();
     return;
   }
+  /* sobre un cable, el cursor dice hacia dónde se puede arrastrar el tramo */
+  if (!sim.on && (tool === 'select' || tool === 'box') && e.target.classList && e.target.classList.contains('whit')) {
+    const ww = doc.wires.find(x => x.id === e.target.dataset.id);
+    if (ww) { let hz = true, bd = Infinity; const x = w[0] / G, y = w[1] / G; for (let i = 1; i < ww.pts.length; i++) { const a = ww.pts[i - 1], b = ww.pts[i], px = clamp(x, Math.min(a[0], b[0]), Math.max(a[0], b[0])), py = clamp(y, Math.min(a[1], b[1]), Math.max(a[1], b[1])), dd = Math.hypot(x - px, y - py); if (dd < bd) { bd = dd; hz = a[1] === b[1]; } } e.target.style.cursor = hz ? 'ns-resize' : 'ew-resize'; }
+  }
   if (!sim.on && tool === 'wire' && wireDraft) edgeStart();
   if (!sim.on && (tool === 'wire' || tool === 'place')) { if (!hover || hover[0] !== g[0] || hover[1] !== g[1]) { hover = g; draw(); } }
 });
 /* Arrastre en curso: mover, recuadro o cable */
 function dragAt(w, g) {
+  if (drag.mode === 'seg') {
+    const d = g[drag.ax] - drag.start[drag.ax];
+    if (d !== drag.d) { if (!drag.moved) { snap(); drag.moved = true; } drag.d = d; applySeg(d); draw(); }
+    return;
+  }
   if (drag.mode === 'move') {
     const dx = g[0] - drag.start[0], dy = g[1] - drag.start[1];
     if (dx !== drag.dx || dy !== drag.dy) { if (!drag.moved) { snap(); drag.moved = true; } drag.dx = dx; drag.dy = dy; applyMove(dx, dy); draw(); }
@@ -3125,6 +3362,7 @@ function endPointer(e) {
   if (d.mode === 'pan' && d.right) { if (!d.moved) { if (tool === 'wire') finishWire(); else if (tool === 'place') setTool('select'); } return; }
   if (d.mode === 'pan' && d.click) { if (!d.moved) { d.click(e); drag = null; } return; }
   if (d.mode === 'pan' && d.clear && !d.moved && selection.size) { selection.clear(); draw(); inspector(); updateBtns(); }
+  else if (d.mode === 'seg') { if (d.moved) { drag = d; segEnd(); drag = null; changed(); } }
   else if (d.mode === 'move' && d.moved) {
     for (const o of d.rubber.concat(d.wires)) o.w.pts = norm(o.w.pts);
     doc.wires = doc.wires.filter(w => w.pts.length > 1);
@@ -3148,6 +3386,8 @@ sv.addEventListener('wheel', e => {
   e.preventDefault();
   const r = sv.getBoundingClientRect();
   if (e.shiftKey) { view.x -= e.deltaY; applyView(); return; }
+  /* deslizar dos dedos de lado en el panel táctil mueve el plano a los lados en vez de acercar */
+  if (!e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY)) { view.x -= e.deltaX; applyView(); return; }
   zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0016)));
 }, {passive: false});
 window.addEventListener('blur', () => { spaceDown = false; release(); });
@@ -3160,6 +3400,9 @@ window.addEventListener('keydown', e => {
   if (anyModal()) { if (e.key === 'Escape') { if (!$('#cmd').hidden) closeModals(); else closeHome(); } return; }
   if (e.target.matches && e.target.matches('input,textarea,select')) return;
   if (!menuEl.hidden && k === 'escape') { closeMenu(); return; }
+  /* con la pregunta del color abierta, los números eligen la opción (no cambian el número de cables) */
+  if (!menuEl.hidden && (menuEl.dataset.wire || menuEl.dataset.wires) && k === 'enter') { const b = menuEl.contains(document.activeElement) && document.activeElement.matches('button') ? document.activeElement : menuEl.querySelector('.mi.sug') || menuEl.querySelector('.mi'); if (b) { e.preventDefault(); b.click(); } return; }
+  if (!menuEl.hidden && (menuEl.dataset.wire || menuEl.dataset.wires) && /^[1-7]$/.test(k) && !mod) { const b = menuEl.querySelectorAll('.cpk .mi')[+k - 1]; if (b) { e.preventDefault(); b.click(); } return; }
   if (k === ' ') { spaceDown = true; e.preventDefault(); return; }
   if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
   if (mod && k === 'y') { e.preventDefault(); doRedo(); return; }
@@ -3182,6 +3425,7 @@ window.addEventListener('keydown', e => {
     case 'delete': case 'backspace': e.preventDefault(); delSel(); break;
     case 'f': fit(); break;
     case 's': sim.on ? simStop() : simStart(); break;
+    case 'p': if (sim.on) setSpeed(sim.speed === 0 ? 1 : 0); break;
     case 'n': newTab(); break;
     case '/': e.preventDefault(); openCmd(); break;
     case 'escape':
@@ -3201,16 +3445,39 @@ function icon(k) {
   const w = b[2] - b[0] + 12, h = b[3] - b[1] + 12;
   return `<svg viewBox="${b[0] - 6} ${b[1] - 6} ${w} ${h}" preserveAspectRatio="xMidYMid meet"><g class="cp ico">${t.draw(fake, st)}</g></svg>`;
 }
+/* El cajón medía más de 6.000 px (135 fichas en 15 familias): había que bajar once pantallas para llegar a
+   la neumática. Ahora cada familia se pliega con un clic (se recuerda), arriba están los últimos usados y las
+   fichas van de tres en tres. Al buscar se ve todo lo que coincide aunque su familia esté plegada. */
+const PAL_OPEN0 = ['Alimentación', 'Protección', 'Mando', 'Contactores y relés', 'Temporizadores', 'Receptores'];
+let palClosed = (() => { try { const v = JSON.parse(lsGet('banco:cajon') || 'null'); if (Array.isArray(v)) return new Set(v); } catch (_) {} return new Set(PAL.map(p => p[0]).filter(c => !PAL_OPEN0.includes(c))); })();
+let palRecent = (() => { try { const v = JSON.parse(lsGet('banco:recientes') || '[]'); return Array.isArray(v) ? v.filter(k => T[k]).slice(0, 9) : []; } catch (_) { return []; } })();
+const palItem = (k, cat) => `<button class="it" data-type="${k}" title="${hx(T[k].name)}" data-q="${hx((T[k].name + ' ' + T[k].short + ' ' + cat).toLowerCase())}"><span class="ic">${icon(k)}</span><span class="nm">${hx(T[k].short)}</span></button>`;
+function palRecentHTML() { return palRecent.length ? `<section class="pc rec" data-cat="Recientes"><h3><span>Usados hace poco</span></h3><div class="pgrid">${palRecent.map(k => palItem(k, T[k].cat)).join('')}</div></section>` : ''; }
 function buildPal() {
-  let h = '';
+  let h = '<div id="pal-rec">' + palRecentHTML() + '</div>';
   for (const [cat, list] of PAL) {
-    h += `<section class="pc"><h3>${cat}</h3><div class="pgrid">`;
-    for (const k of list) h += `<button class="it" data-type="${k}" title="${hx(T[k].name)}" data-q="${hx((T[k].name + ' ' + T[k].short + ' ' + cat).toLowerCase())}"><span class="ic">${icon(k)}</span><span class="nm">${hx(T[k].short)}</span></button>`;
+    const cl = palClosed.has(cat);
+    h += `<section class="pc${cl ? ' closed' : ''}" data-cat="${hx(cat)}"><h3><button class="pch" aria-expanded="${!cl}"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg><span>${cat}</span><em>${list.length}</em></button></h3><div class="pgrid">`;
+    for (const k of list) h += palItem(k, cat);
     h += '</div></section>';
   }
   $('#pal-list').innerHTML = h;
 }
+function palUsed(k) {
+  if (k === 'text') return;
+  palRecent = [k].concat(palRecent.filter(x => x !== k)).slice(0, 9);
+  lsSet('banco:recientes', JSON.stringify(palRecent));
+  const el = $('#pal-rec'); if (el && !$('#q').value.trim()) el.innerHTML = palRecentHTML();
+}
+$('#pal-list').addEventListener('click', e => {
+  const b = e.target.closest('.pch'); if (!b) return;
+  const sec = b.closest('.pc'), cat = sec.dataset.cat, cl = !sec.classList.contains('closed');
+  sec.classList.toggle('closed', cl); b.setAttribute('aria-expanded', String(!cl));
+  cl ? palClosed.add(cat) : palClosed.delete(cat);
+  lsSet('banco:cajon', JSON.stringify([...palClosed]));
+});
 $('#q').addEventListener('input', e => {
+  $('#pal-list').classList.toggle('searching', !!e.target.value.trim());
   const words = plain(e.target.value.trim()).split(/\s+/).filter(Boolean);
   document.querySelectorAll('.pc').forEach(sec => {
     let any = false;
@@ -3220,7 +3487,7 @@ $('#q').addEventListener('input', e => {
 });
 $('#q').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  const first = [...document.querySelectorAll('.it')].find(it => !it.hidden && !it.closest('.pc').hidden);
+  const first = [...document.querySelectorAll('.pc:not(.rec) .it')].find(it => !it.hidden && !it.closest('.pc').hidden);
   if (first) { startPlace(first.dataset.type); e.target.blur(); }
 });
 let palDrag = null;
@@ -3271,7 +3538,7 @@ function inspector(force) {
       <div class="fld"><span>Grosor</span><div class="seg">${thick(ws[0].t)}</div></div>`;
     if (ws.length === 1) h += `<label class="fld"><span>Etiqueta o número</span><input data-wf="lab" id="f-lab" value="${hx(ws[0].lab || '')}" maxlength="14" placeholder="p. ej. 12 o L1"></label>`;
   }
-  h += `<p class="desc">${sel.length === 1 ? 'Arrástrelo para moverlo entero. Para cambiar su recorrido, bórrelo y vuelva a trazarlo.' : 'Arrastre cualquiera de ellos para mover el grupo. Ctrl+C y Ctrl+V lo copian donde esté el ratón, con las marcas renumeradas.'}</p>
+  h += `<p class="desc">${sel.length === 1 ? 'Arrastre cualquier tramo para cambiar el recorrido: los extremos siguen conectados. Para moverlo entero, márquelo junto con sus componentes.' : 'Arrastre cualquiera de ellos para mover el grupo. Ctrl+C y Ctrl+V lo copian donde esté el ratón, con las marcas renumeradas.'}</p>
     <div class="acts">${nc && sel.length === 1 ? '<button class="btn" data-act="rot">Girar 90°</button>' : ''}<button class="btn" data-act="copy">Copiar</button><button class="btn" data-act="dup">Duplicar</button><button class="btn danger" data-act="del">Eliminar</button></div>`;
   ib.innerHTML = h;
 }
@@ -3430,6 +3697,7 @@ ib.addEventListener('click', e => {
   const wc = e.target.closest('[data-wc]'); if (wc) { const k = wc.dataset.wc; wstyle.c = k; applyWires(w => { if (k === 'auto') delete w.c; else w.c = k; }); return; }
   const wt = e.target.closest('[data-wt]'); if (wt) { const k = wt.dataset.wt; wstyle.t = k; applyWires(w => { if (k === 'g') w.t = 'g'; else delete w.t; }); return; }
   const tb = e.target.closest('[data-tx]'); if (tb) { const c = selComp(); if (c && c.type === 'text') { snap(); txSet(c.p, tb.dataset.tx); changed(); } return; }
+  const spb = e.target.closest('[data-sp]'); if (spb) { setSpeed(+spb.dataset.sp); return; }
   const iv = e.target.closest('[data-inv]'); if (iv) { const c = selComp(); if (c) { snap(); c.p.nc = iv.dataset.inv === '1'; changed(); } return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
@@ -3440,17 +3708,24 @@ ib.addEventListener('click', e => {
   else if (a === 'stop') simStop();
   else runAction(a);
 });
+function setSpeed(v) {
+  if (!sim.on) return;
+  sim.speed = v; lastT = performance.now();
+  document.querySelectorAll('#sim-sp [data-sp]').forEach(b => b.classList.toggle('on', +b.dataset.sp === v));
+  log(v ? 'Velocidad ×' + v : 'En pausa'); liveInsp();
+}
 function simShell() {
   return `<div class="ph"><div><div class="ty">En simulación</div><div class="cat" id="sim-t">0:00,0</div></div></div>
   <p class="desc">Mantenga pulsados los pulsadores con el ratón; Mayús+clic los deja enclavados. Un clic acciona interruptores, sensores, finales de carrera, protecciones, relés térmicos y defectos a tierra.</p>
   <label class="chk"><input type="checkbox" id="f-volt"${sim.voltView ? ' checked' : ''}> Colorear los cables según su tensión</label>
+  <div class="fld"><span>Velocidad del tiempo · tecla P para pausar</span><div class="seg" id="sim-sp">${[[0, 'Pausa'], [1, '×1'], [2, '×2'], [5, '×5'], [10, '×10']].map(([v, l]) => `<button data-sp="${v}" class="${(sim.speed === undefined ? 1 : sim.speed) === v ? 'on' : ''}">${l}</button>`).join('')}</div></div>
   <div class="acts"><button class="btn" data-act="stop">Volver a editar</button></div>
   <h4>Aparatos</h4><div id="live"></div><h4>Registro</h4><ol class="log" id="log"></ol>`;
 }
 const tclock = t => { const m = Math.floor(t / 60), s = t - m * 60; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(1).replace('.', ','); };
 function liveInsp() {
   if (!sim.on) return;
-  const st = $('#sim-t'); if (st) st.textContent = tclock(sim.t);
+  const st = $('#sim-t'); if (st) st.textContent = tclock(sim.t) + (sim.speed === 0 ? ' · en pausa' : sim.speed > 1 ? ' · ×' + sim.speed : '');
   const rows = [], seen = new Set();
   const order = [...new Set(PAL.flatMap(p => p[1]))];
   const row = (tag, name, txt, k) => rows.push(`<div class="dev"><span class="dt">${hx(tag || '—')}</span><span class="dn">${hx(name)}</span><span class="pill ${k}">${hx(txt)}</span></div>`);
@@ -3509,14 +3784,19 @@ function liveInsp() {
 }
 $('#insp-tog').addEventListener('click', () => $('#insp').classList.toggle('open'));
 
+/* La ayuda de la herramienta sale al cambiar de herramienta y se desvanece a los pocos segundos:
+   antes tapaba siempre dos líneas de la hoja. Vuelve a salir al cambiar de herramienta o al simular. */
+let hintT = 0, hintLast = '';
 function hint() {
-  $('#hint').textContent = sim.on ? 'Mantenga pulsados los pulsadores · Mayús+clic los enclava · clic en interruptores, sensores, protecciones y relés térmicos'
+  const el = $('#hint');
+  el.textContent = sim.on ? 'Mantenga pulsados los pulsadores · Mayús+clic los enclava · clic en interruptores, sensores y protecciones · P pausa'
     : tool === 'wire' && wireN > 1 ? wireN + ' cables a la vez: pinche en una fila de bornes y arrastre hasta la otra · teclas 2 a 5 cambian el número · 1 o W vuelve a un cable · Esc para terminar'
     : tool === 'wire' ? 'Clic en un borne para empezar · cada clic dobla el cable · arrastre en vacío o botón derecho para moverse por el plano · Esc para terminar'
     : tool === 'text' ? 'Clic en la hoja para escribir · Intro para otra línea · Esc o clic fuera para terminar'
     : tool === 'place' ? 'Clic en la hoja para colocar · R gira · Mayús+clic coloca varios · Esc cancela'
     : tool === 'box' ? 'Arrastre para marcar varios con un recuadro · arrastre lo marcado para moverlo · Ctrl+C y Ctrl+V copian · V vuelve a Mover'
-    : 'Arrastre en vacío para moverse por el plano · clic para elegir un componente · botón Selección o Mayús+arrastre para marcar varios · rueda para acercar';
+    : 'Arrastre en vacío para moverse por el plano · clic para elegir · arrastre un cable para cambiar su recorrido · Mayús+arrastre marca varios · rueda para acercar';
+  if (el.textContent !== hintLast) { hintLast = el.textContent; el.classList.remove('fade'); clearTimeout(hintT); hintT = setTimeout(() => el.classList.add('fade'), 7000); }
 }
 
 /* ---------- hojas del plano ---------- */
@@ -3535,7 +3815,7 @@ function switchSheet(i) {
   selection.clear(); wireDraft = null; GEO = geo(); sheetConf = null;
   renderSheets();
   if (doc._view) { view = Object.assign({}, doc._view); applyView(); } else fit();
-  draw(); inspector(true); plcSync();
+  draw(); inspector(true); plcSync(); rvSoon();
 }
 function addSheet() {
   if (sim.on) return;
@@ -3776,6 +4056,7 @@ function closeMenu() { const was = !menuEl.hidden && plcEl._sel; menuEl.hidden =
 const mi = (act, title, sub, key) => `<button class="mi" data-act="${act}"><span><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span>${key ? `<kbd>${key}</kbd>` : ''}</button>`;
 $('#b-file').addEventListener('click', () => openHome('inicio'));
 $('#b-help').addEventListener('click', () => openHome('ayuda'));
+$('#b-chk').addEventListener('click', e => { const b = e.currentTarget; rvBadge(); openMenu(b, rvHTML(), 380); if (!menuEl.hidden) { const r = b.getBoundingClientRect(); menuEl.style.left = Math.max(8, Math.min(r.right - menuEl.offsetWidth, innerWidth - menuEl.offsetWidth - 8)) + 'px'; } });
 $('#b-wst').addEventListener('click', e => {
   e.stopPropagation();
   const num = doc.wires.some(w => w.lab);
@@ -3793,6 +4074,7 @@ menuEl.addEventListener('change', e => {
 });
 menuEl.addEventListener('click', e => {
   const pl = e.target.closest('[data-pl]'); if (pl) { plcMenuAct(pl.dataset.pl); return; }
+  const rv = e.target.closest('[data-rv]'); if (rv) { rvGo(+rv.dataset.rv); return; }
   const askm = e.target.closest('[data-askm]');
   if (askm) {
     const ids = (menuEl.dataset.wires || '').split(','), k = askm.dataset.askm, ws = ids.map(id => doc.wires.find(x => x.id === id)).filter(Boolean);
@@ -3912,7 +4194,7 @@ function saveSession() { lsSet(K('sesion'), JSON.stringify({open: tabs.map(t => 
 function renderTabs() {
   $('#tabs').innerHTML = tabs.map((t, i) => `<div class="tab${i === cur ? ' on' : ''}" data-tab="${i}" role="tab" aria-selected="${i === cur}" title="${hx(t.name)} · doble clic para cambiar el nombre"><span class="tname">${hx(t.name)}</span><button class="tx" data-close="${i}" aria-label="Cerrar ${hx(t.name)}">×</button></div>`).join('') +
     '<button class="tadd" id="tab-new" title="Plano nuevo (N)" aria-label="Plano nuevo">+</button><span class="sst" data-sst></span>';
-  setSst();
+  setSst();  rvSoon();
 }
 function switchTab(i) {
   if (plcId) plcClose();
@@ -4675,10 +4957,12 @@ function renderHome() {
     h += `<h1>Ayuda</h1><div class="hform" style="max-width:720px">
       <h4>Cómo se usa</h4><ol class="steps">
         <li>Busque un componente con Ctrl+K por su nombre o por lo que hace («luz», «paro», «bomba») o arrástrelo desde el cajón de la izquierda.</li>
-        <li>Para cablear, pinche en un borne, arrastre y suelte en otro borne. El cable queda puesto y le pregunta qué conductor es.</li>
+        <li>Para cablear, pinche en un borne, arrastre y suelte en otro borne. El cable queda puesto y le pregunta qué conductor es; si llega a una alimentación, la respuesta viene marcada como sugerida (Intro la acepta).</li>
+        <li>Para cambiar el recorrido de un cable, arrastre cualquiera de sus tramos: los extremos y los cables que llegan a él siguen conectados.</li>
         <li>Para la potencia, el botón «3 cables» (o las teclas 2 a 5) tira varios a la vez: pinche en una fila de bornes y suelte en la otra.</li>
         <li>Ponga a los contactos la misma marca que su bobina: un contacto KM1 sigue a la bobina KM1.</li>
-        <li>Pulse Simular y accione los pulsadores con el ratón. Si un cable tiene un color que no le toca, sale marcado en rojo.</li></ol>
+        <li>El botón Revisar cuenta lo que impediría que el circuito funcione: bornes al aire, contactos sin bobina, cables sueltos, cortocircuitos directos y colores cambiados. Un clic en cada aviso lleva hasta él.</li>
+        <li>Pulse Simular y accione los pulsadores con el ratón. Si un cable tiene un color que no le toca, sale marcado en rojo. En el panel de la derecha se puede pausar o acelerar el tiempo (×2, ×5, ×10) para no esperar a temporizadores y cilindros.</li></ol>
       <h4>Varias hojas</h4><ol class="steps">
         <li>Abajo a la izquierda están las hojas del plano: + añade una, doble clic cambia el nombre y × la borra.</li>
         <li>Para unir un punto de una hoja con otro de otra hoja, ponga en cada una un «Conector de hoja» con la misma marca (por ejemplo L). Doble clic sobre él salta a su pareja.</li>
@@ -4689,7 +4973,7 @@ function renderHome() {
         <li>Doble clic sobre el PLC (o «Editar programa») abre el programa en contactos: columnas en serie (Y) con contactos en paralelo (O) y una salida por segmento: bobina, Set, Reset, temporizadores TON y TOF y contador.</li>
         <li>Al simular, el programa se pinta en verde por donde pasa la corriente. Un pulsador NC cableado a una entrada pone esa entrada a 1 en reposo: en el programa se usa como NA.</li></ol>
       <h4>Código de colores</h4><div class="leg"><div><i style="background:var(--l1)"></i>Fases L1, L2, L3 · marrón, negro y gris</div><div><i style="background:var(--n)"></i>Neutro · azul</div><div><i style="background:repeating-linear-gradient(90deg,var(--pe) 0 8px,#E9C81C 8px 13px)"></i>Protección (tierra) · verde-amarillo, solo para ella</div><div><i style="background:#D0342C"></i>Mando · rojo (habitual en cuadros)</div></div>
-      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / B / W / T</kbd><span>Mover / selección / cable / texto</span><kbd>2 a 5</kbd><span>Tirar ese número de cables a la vez</span><kbd>Arrastrar en vacío</kbd><span>Moverse por el plano (también con el botón derecho)</span><kbd>B o Mayús + arrastrar</kbd><span>Marcar varios con un recuadro</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span></div></div>`;
+      <h4>Atajos</h4><div class="keys"><kbd>Ctrl+K</kbd><span>Buscar un componente</span><kbd>V / B / W / T</kbd><span>Mover / selección / cable / texto</span><kbd>2 a 5</kbd><span>Tirar ese número de cables a la vez</span><kbd>Arrastrar en vacío</kbd><span>Moverse por el plano (también con el botón derecho)</span><kbd>B o Mayús + arrastrar</kbd><span>Marcar varios con un recuadro</span><kbd>Ctrl+X</kbd><span>Cortar</span><kbd>R</kbd><span>Girar 90°</span><kbd>Supr</kbd><span>Eliminar</span><kbd>Ctrl+Z / Ctrl+Y</kbd><span>Deshacer / rehacer</span><kbd>Ctrl+C / V / D</kbd><span>Copiar, pegar, duplicar</span><kbd>Ctrl+O</kbd><span>Abrir</span><kbd>N</kbd><span>Plano nuevo</span><kbd>Ctrl+P</kbd><span>Exportar PDF</span><kbd>Mayús+arrastrar</kbd><span>Seleccionar varios</span><kbd>F</kbd><span>Ajustar a la ventana</span><kbd>S</kbd><span>Simular / detener</span><kbd>P</kbd><span>Pausar o seguir la simulación</span><kbd>Intro / 1 a 7</kbd><span>Al terminar un cable: aceptar el color sugerido o elegir otro</span><kbd>Arrastrar un cable</kbd><span>Cambiar el recorrido del tramo pinchado</span></div></div>`;
   }
   else h += `<h1>Abrir</h1><div class="drop" id="h-drop"><span>Arrastre aquí un archivo .json del programa, o</span><button class="btn" data-hact="import">Importar archivo…</button></div>
     <div class="hstore"><span class="sst" data-sst></span>${Store.col ? '' : WEB ? (FB ? '<button class="btn sm" data-hs="cuenta">Inicia sesión para tenerlos en cualquier ordenador</button>' : '') : '<button class="btn sm" data-hact="cloud">Guardar también en mi cuenta de Claude</button>'}</div>
@@ -4983,6 +5267,8 @@ async function cloudInit(ask) {
   } catch (_) { Store.col = null; if (ask) toast('No se ha podido conectar con tu cuenta', 'err'); return false; }
 }
 cloudInit(false).then(ok => { if (ok && !homeEl.hidden) Store.list().then(L => { libCache = L; renderHome(); }); });
+/* Enganche de pruebas: solo con ?dev en la dirección. No cambia nada del programa. */
+if (/[?&]dev\b/.test(location.search)) window.__B = {T, PAL, sim, G, get doc() { return doc; }, get view() { return view; }, get selection() { return selection; }, get tool() { return tool; }, get undo() { return undoS.length; }, draw, changed, fit, simStart, simStop, step, snapG, toWorld, wpins, setTool, startPlace, placeAt, selComp, analyze: () => sim.A, review};
 window.addEventListener('beforeunload', () => { for (const t of tabs) if (t._st) { clearTimeout(t._st); Store.putLocal({id: t.id, name: t.name, meta: t.meta, doc: bookPlain(t.book), updated: t.updated}); } saveSession(); });
 })();
 </script>
